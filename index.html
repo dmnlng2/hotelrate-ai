@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HotelRate AI | Pricing Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <div class="brand">HotelRate <span>AI</span></div>
+      <div class="tag">Educational simulator</div>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="intro" aria-labelledby="title">
+      <p class="location">Costa Smeralda · Sardinia</p>
+      <h1 id="title">Room pricing simulator</h1>
+      <p>Explore how occupancy, season and market demand affect the nightly rate at a fictional 100-room luxury resort.</p>
+    </section>
+
+    <div class="dashboard">
+      <section class="card controls" aria-labelledby="inputs-title">
+        <h2 id="inputs-title">Scenario inputs</h2>
+        <form id="scenario" novalidate>
+          <div class="room-fields">
+            <label for="total">Total rooms
+              <input id="total" type="number" min="1" step="1" required value="100" aria-describedby="error">
+            </label>
+            <label for="booked">Rooms booked
+              <input id="booked" type="number" min="0" step="1" required value="72" aria-describedby="error">
+            </label>
+          </div>
+          <label for="base">Base nightly rate (EUR)
+            <input id="base" type="number" min="0.01" step="0.01" required value="500" aria-describedby="error">
+          </label>
+          <label for="season">Season
+            <select id="season" aria-describedby="error">
+              <option value="low">Low</option>
+              <option value="shoulder">Shoulder</option>
+              <option value="high" selected>High</option>
+              <option value="peak">Peak</option>
+            </select>
+          </label>
+          <label for="demand">Market demand
+            <select id="demand" aria-describedby="error">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <p id="error" class="error" role="alert"></p>
+          <div class="actions">
+            <button type="submit">Calculate rate</button>
+            <button class="secondary" type="reset">Reset</button>
+          </div>
+        </form>
+      </section>
+
+      <div id="results" class="results" aria-live="polite" aria-atomic="true">
+        <section class="rate card" aria-labelledby="rate-title">
+          <h2 id="rate-title">Suggested nightly rate</h2>
+          <div id="rate" class="rate-value">—</div>
+          <div class="rate-details">
+            <span id="difference">—</span>
+            <span id="occupancy">—</span>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="rules-title">
+          <h2 id="rules-title">How the rate is calculated</h2>
+          <dl class="rules">
+            <div><dt id="occupancy-rule">Occupancy</dt><dd id="occupancy-factor">—</dd></div>
+            <div><dt id="season-rule">Season</dt><dd id="season-factor">—</dd></div>
+            <div><dt id="demand-rule">Market demand</dt><dd id="demand-factor">—</dd></div>
+          </dl>
+          <p id="formula" class="formula">—</p>
+        </section>
+
+        <section class="card" aria-labelledby="metrics-title">
+          <h2 id="metrics-title">Illustrative one-night metrics</h2>
+          <dl class="metrics">
+            <div><dt>Scenario ADR</dt><dd id="adr">—</dd></div>
+            <div><dt>Scenario RevPAR</dt><dd id="revpar">—</dd></div>
+            <div><dt>Room revenue</dt><dd id="revenue">—</dd></div>
+          </dl>
+          <p class="note">Assumes every booked room is sold at the suggested rate for one night and all other rooms earn zero. Excludes taxes, fees and extras. Scenario ADR is undefined when no rooms are booked.</p>
+        </section>
+      </div>
+    </div>
+    <footer>Hypothetical inputs and fixed pricing rules for learning. No AI predictions or market validation.</footer>
+  </main>
+</body>
+</html>
