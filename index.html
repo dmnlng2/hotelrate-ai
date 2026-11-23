@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HotelRate AI V2 | Pricing Simulator</title>
+  <title>HotelRate AI V3.1 | Pricing Simulator and Hotel Data Import</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
+  <script src="hotel-import.js" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -118,7 +119,39 @@
       </form>
       <p id="storage-message" class="note" role="status"></p>
     </section>
-    <footer>Hypothetical inputs and fixed pricing rules for learning. No AI predictions or market validation.</footer>
+    <section class="card hotel-import" aria-labelledby="hotel-import-title">
+      <h2 id="hotel-import-title">Hotel Data Import</h2>
+      <p id="hotel-import-help" class="note">Choose a comma-delimited UTF-8 CSV up to 1 MiB (1,048,576 bytes). The browser reads the file locally. Refreshing clears the imported data.</p>
+      <p class="note">Enter room revenue in EUR, excluding VAT and ancillary services. For stay dates after today, the amount represents booked room value.</p>
+      <p><a href="sample-hotel-data.csv" download>Download sample CSV</a></p>
+      <label for="hotel-csv">Hotel data CSV
+        <input id="hotel-csv" type="file" accept=".csv,text/csv" aria-describedby="hotel-import-help hotel-import-error">
+      </label>
+      <p id="hotel-import-error" class="error" role="alert"></p>
+      <p id="hotel-import-status" class="note" role="status"></p>
+      <div id="hotel-import-preview" class="hotel-import-preview" role="region" aria-label="Hotel data table" tabindex="0" hidden>
+        <table>
+          <caption></caption>
+          <thead>
+            <tr>
+              <th scope="col">Stay date</th>
+              <th scope="col">Snapshot date</th>
+              <th scope="col">Rooms available</th>
+              <th scope="col">Rooms sold</th>
+              <th scope="col">Room amount (EUR)</th>
+              <th scope="col">Amount type</th>
+              <th scope="col">Occupancy</th>
+              <th scope="col">ADR</th>
+              <th scope="col">RevPAR</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">Confirming replaces the current import and stores all validated rows in memory.</p>
+      <div class="actions"><button id="hotel-import-confirm" type="button" disabled>Confirm Import</button></div>
+    </section>
+    <footer>Simulator rates use hypothetical inputs and fixed pricing rules. No AI predictions or market validation.</footer>
   </main>
 </body>
 </html>

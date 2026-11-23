@@ -65,7 +65,14 @@ dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .note { margin-bottom: 0; }
 footer { padding: 22px 0 30px; }
 
-.calendar { margin-top: 20px; }
+.calendar, .hotel-import { margin-top: 20px; }
+.hotel-import-preview { overflow-x: auto; margin-block: 12px; }
+.hotel-import table { width: 100%; border-collapse: collapse; font-size: .85rem; white-space: nowrap; }
+.hotel-import caption { text-align: left; font-weight: 650; padding-block: 8px; }
+.hotel-import th, .hotel-import td { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.hotel-import input { max-width: 30rem; }
+.hotel-import .error { margin-top: 8px; }
+.hotel-import button:disabled { opacity: .5; cursor: default; }
 .calendar-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
 .calendar-controls input { max-width: 8rem; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
