@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HotelRate AI | Pricing Simulator</title>
+  <title>HotelRate AI V2 | Pricing Simulator</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -30,17 +30,17 @@
               <input id="total" type="number" min="1" step="1" required value="100" aria-describedby="error">
             </label>
             <label for="booked">Rooms booked
-              <input id="booked" type="number" min="0" step="1" required value="72" aria-describedby="error">
+              <input id="booked" type="number" min="0" step="1" required value="0" aria-describedby="error">
             </label>
           </div>
           <label for="base">Base nightly rate (EUR)
-            <input id="base" type="number" min="0.01" step="0.01" required value="500" aria-describedby="error">
+            <input id="base" type="number" min="0" step="0.01" required value="0" aria-describedby="error scenario-info">
           </label>
           <label for="season">Season
             <select id="season" aria-describedby="error">
               <option value="low">Low</option>
-              <option value="shoulder">Shoulder</option>
-              <option value="high" selected>High</option>
+              <option value="shoulder" selected>Shoulder</option>
+              <option value="high">High</option>
               <option value="peak">Peak</option>
             </select>
           </label>
@@ -52,6 +52,7 @@
             </select>
           </label>
           <p id="error" class="error" role="alert"></p>
+          <p id="scenario-info" class="note" role="status" hidden></p>
           <div class="actions">
             <button type="submit">Calculate rate</button>
             <button class="secondary" type="reset">Reset</button>
@@ -59,7 +60,7 @@
         </form>
       </section>
 
-      <div id="results" class="results" aria-live="polite" aria-atomic="true">
+      <div id="results" class="results" aria-live="polite" aria-atomic="true" hidden>
         <section class="rate card" aria-labelledby="rate-title">
           <h2 id="rate-title">Suggested nightly rate</h2>
           <div id="rate" class="rate-value">—</div>
@@ -90,6 +91,33 @@
         </section>
       </div>
     </div>
+    <section class="card calendar" aria-labelledby="calendar-title">
+      <h2 id="calendar-title">Simulated monthly pricing</h2>
+      <p class="note">Daily estimates use the scenario above. Saved edits override booked rooms and demand for the selected date. Friday and Saturday rates include a 10% weekend multiplier.</p>
+      <div class="calendar-controls">
+        <label for="calendar-month">Month
+          <select id="calendar-month"></select>
+        </label>
+        <label for="calendar-year">Year
+          <input id="calendar-year" type="number" min="1" max="9999" step="1" value="2027" required>
+        </label>
+      </div>
+      <p id="calendar-message" class="error" role="status"></p>
+      <div id="calendar-grid" class="calendar-grid"></div>
+      <form id="day-editor" hidden>
+        <h3 id="day-title"></h3>
+        <div class="room-fields">
+          <label for="day-booked">Simulated booked rooms
+            <input id="day-booked" type="number" min="0" step="1" required>
+          </label>
+          <label for="day-demand">Simulated demand
+            <select id="day-demand"></select>
+          </label>
+        </div>
+        <div class="actions"><button type="submit">Save date</button></div>
+      </form>
+      <p id="storage-message" class="note" role="status"></p>
+    </section>
     <footer>Hypothetical inputs and fixed pricing rules for learning. No AI predictions or market validation.</footer>
   </main>
 </body>
