@@ -12,6 +12,8 @@ const fields = {
 
 const scenarioStorageKey = "hotelrate-ai-v2-scenario";
 const scenarioInfo = byId("scenario-info");
+const overviewMetrics = byId("overview-metrics");
+const overviewEmpty = byId("overview-empty");
 
 const euro = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
 const percent = new Intl.NumberFormat("en-IE", { style: "percent", maximumFractionDigits: 2 });
@@ -48,9 +50,19 @@ function validateScenario(scenario) {
 // Copy the calculated values to the page without rebuilding the markup.
 function renderPricing(scenario, result) {
   const { occupancy, band, seasonFactor, demandFactor, rate, difference, adr, revpar, revenue } = result;
-  byId("rate").textContent = euro.format(rate);
+  const metrics = {
+    rate: euro.format(rate),
+    occupancy: percent.format(occupancy),
+    adr: adr === null ? "N/A" : euro.format(adr),
+    revpar: euro.format(revpar),
+    revenue: euro.format(revenue)
+  };
+  for (const metric of overviewMetrics.querySelectorAll("[data-overview-metric]")) {
+    metric.textContent = metrics[metric.dataset.overviewMetric];
+  }
+  byId("rate").textContent = metrics.rate;
   byId("difference").textContent = signedPercent.format(difference) + " vs base rate";
-  byId("occupancy").textContent = percent.format(occupancy) + " occupancy";
+  byId("occupancy").textContent = metrics.occupancy + " occupancy";
   byId("occupancy-rule").textContent = "Occupancy · " + band.label;
   byId("season-rule").textContent = "Season · " + fields.season.selectedOptions[0].text;
   byId("demand-rule").textContent = "Market demand · " + fields.demand.selectedOptions[0].text;
@@ -61,9 +73,9 @@ function renderPricing(scenario, result) {
     euro.format(scenario.base), factorText(band.factor), factorText(seasonFactor),
     factorText(demandFactor), "≈ " + euro.format(rate)
   ].join(" ");
-  byId("adr").textContent = adr === null ? "N/A" : euro.format(adr);
-  byId("revpar").textContent = euro.format(revpar);
-  byId("revenue").textContent = euro.format(revenue);
+  byId("adr").textContent = metrics.adr;
+  byId("revpar").textContent = metrics.revpar;
+  byId("revenue").textContent = metrics.revenue;
   byId("results").hidden = false;
 }
 
@@ -114,6 +126,8 @@ function runSimulation({ focusError = false, save = false } = {}) {
   byId("error").textContent = error ? error.message : "";
   calendarScenario = error ? null : scenario;
   renderCalendar();
+  overviewMetrics.hidden = Boolean(error) || waitingForRate;
+  overviewEmpty.hidden = !overviewMetrics.hidden;
   if (error) {
     byId("results").hidden = true;
     fields[error.field].setAttribute("aria-invalid", "true");
@@ -213,6 +227,7 @@ function renderCalendar() {
   }
   for (let day = 1; day <= daysInMonth; day += 1) {
     const date = calendarDate(year, month, day);
+    const hasOverride = dailyEdits.has(dateKey(date));
     const weekend = PRICING_RULES.weekend;
     const factor = weekend.days.includes(date.getUTCDay()) ? weekend.factor : 1;
     const scenario = scenarioForDate(date);
@@ -225,13 +240,15 @@ function renderCalendar() {
     button.setAttribute("aria-pressed", String(selectedDate !== null && +selectedDate === +date));
     button.setAttribute("aria-label", [
       dateFormat.format(date), hasRate ? rateText : "Rate pending",
-      percent.format(occupancy) + " simulated occupancy"
+      percent.format(occupancy) + " simulated occupancy",
+      ...(hasOverride ? ["saved override"] : [])
     ].join(", "));
     for (const [value, className] of [
       [day, "calendar-desktop-date"],
       [shortDateFormat.format(date), "calendar-mobile-date"],
-      [rateText, ""],
-      [percent.format(occupancy) + " occ.", ""]
+      [rateText, "calendar-rate"],
+      [percent.format(occupancy) + " occ.", "calendar-occupancy"],
+      ...(hasOverride ? [["Override", "calendar-override"]] : [])
     ]) {
       const span = document.createElement("span");
       span.className = className;
@@ -253,6 +270,7 @@ function renderCalendar() {
 function showDayEditor() {
   const scenario = scenarioForDate(selectedDate);
   byId("day-title").textContent = dateFormat.format(selectedDate);
+  byId("day-override").hidden = !dailyEdits.has(dateKey(selectedDate));
   dayBooked.max = scenario.total;
   dayBooked.value = scenario.booked;
   dayDemand.value = scenario.demand;
@@ -292,3 +310,45 @@ form.addEventListener("reset", () => {
 });
 
 runSimulation();
+
+function setupWorkspaceNavigation() {
+  const views = new Map(
+    Array.from(document.querySelectorAll("[data-view]"), (view) => [view.dataset.view, view])
+  );
+  const links = document.querySelectorAll(".workspace-nav a");
+  const mode = byId("workspace-mode");
+  let activeView;
+
+  function showView() {
+    const route = window.location.hash.slice(1);
+    const nextView = views.get(route) ?? views.get("overview");
+    if (nextView === activeView) return;
+
+    const previousView = activeView;
+    activeView = nextView;
+    for (const view of views.values()) view.hidden = view !== activeView;
+    for (const link of links) {
+      if (link.hash === "#" + activeView.dataset.view) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    }
+
+    const isImport = activeView.dataset.view === "data-import";
+    mode.textContent = isImport ? "Hotel CSV data" : "Simulation data";
+    mode.classList.toggle("workspace-mode-import", isImport);
+    const heading = byId(activeView.getAttribute("aria-labelledby"));
+    document.title = heading.textContent + " | HotelRate AI";
+    if (previousView) {
+      heading.focus({ preventScroll: true });
+      window.scrollTo(0, 0);
+    }
+  }
+
+  document.querySelector(".skip-link").addEventListener("click", (event) => {
+    event.preventDefault();
+    byId(activeView.getAttribute("aria-labelledby")).focus();
+  });
+  window.addEventListener("hashchange", showView);
+  showView();
+}
+
+setupWorkspaceNavigation();

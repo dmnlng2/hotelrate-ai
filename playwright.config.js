@@ -3,7 +3,7 @@
 const { defineConfig } = require("@playwright/test");
 
 const host = "127.0.0.1";
-const port = 4173;
+const port = process.env.HOTELRATE_TEST_PORT ?? 4173;
 const baseURL = `http://${host}:${port}`;
 
 module.exports = defineConfig({

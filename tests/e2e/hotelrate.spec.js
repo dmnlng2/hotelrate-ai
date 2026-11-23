@@ -16,7 +16,13 @@ const invalidCsv = {
 const calendarDay = (page, date) =>
   page.getByRole("button", { name: new RegExp(`\\b${date},`) });
 
+async function openView(page, name) {
+  await page.getByRole("navigation", { name: "Workspace" }).getByRole("link", { name, exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name, exact: true })).toBeVisible();
+}
+
 async function enterScenario(page) {
+  await openView(page, "Rate Simulator");
   await page.getByLabel("Rooms booked", { exact: true }).fill("72");
   await page.getByLabel("Base nightly rate (EUR)").fill("500");
   await page.getByRole("combobox", { name: "Season", exact: true }).selectOption("high");
@@ -25,12 +31,17 @@ async function enterScenario(page) {
 }
 
 async function saveFridayEdit(page) {
+  await openView(page, "Pricing Calendar");
   await calendarDay(page, "6 August 2027").click();
   await page.getByLabel("Simulated booked rooms").fill("90");
   await page.getByRole("combobox", { name: "Simulated demand", exact: true }).selectOption("high");
   await page.getByRole("button", { name: "Save date" }).click();
   await expect(page.locator("#storage-message")).toHaveText("Date saved in this browser.");
-  await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€948\.75, 90% simulated occupancy/);
+  const friday = calendarDay(page, "6 August 2027");
+  await expect(friday).toHaveAccessibleName(/€948\.75, 90% simulated occupancy, saved override/);
+  await expect(friday).toHaveAttribute("aria-pressed", "true");
+  await expect(friday.getByText("Override", { exact: true })).toBeVisible();
+  await expect(page.locator("#day-override")).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -38,6 +49,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("calculates simulator metrics and rejects bookings above capacity", async ({ page }) => {
+  await openView(page, "Rate Simulator");
   await expect(page.locator("#scenario-info")).toHaveText(/Enter a base rate above €0/);
   await expect(page.locator("#results")).toBeHidden();
   await enterScenario(page);
@@ -60,13 +72,16 @@ test("calculates simulator metrics and rejects bookings above capacity", async (
 
 test("renders leap-year dates and applies weekend and per-date pricing", async ({ page }) => {
   await enterScenario(page);
+  await openView(page, "Pricing Calendar");
   await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€726\.00, 72%/);
   await expect(calendarDay(page, "7 August 2027")).toHaveAccessibleName(/€726\.00, 72%/);
   await expect(calendarDay(page, "8 August 2027")).toHaveAccessibleName(/€660\.00, 72%/);
   await saveFridayEdit(page);
   await expect(calendarDay(page, "7 August 2027")).toHaveAccessibleName(/€726\.00, 72%/);
+  await openView(page, "Rate Simulator");
   await expect(page.locator("#rate")).toHaveText("€660.00");
 
+  await openView(page, "Pricing Calendar");
   await page.getByRole("combobox", { name: "Month", exact: true }).selectOption({ label: "February" });
   await page.getByLabel("Year", { exact: true }).fill("2028");
   await expect(page.locator("#calendar-grid").getByRole("button")).toHaveCount(29);
@@ -77,6 +92,7 @@ test("renders leap-year dates and applies weekend and per-date pricing", async (
 test("Reset restores and persists scenario defaults while retaining calendar edits", async ({ page }) => {
   await enterScenario(page);
   await saveFridayEdit(page);
+  await openView(page, "Rate Simulator");
   await page.getByLabel("Total rooms").fill("120");
   await page.getByRole("combobox", { name: "Market demand", exact: true }).selectOption("low");
   await page.getByRole("button", { name: "Reset", exact: true }).click();
@@ -88,11 +104,13 @@ test("Reset restores and persists scenario defaults while retaining calendar edi
     await expect(page.getByRole("combobox", { name: "Season", exact: true })).toHaveValue("shoulder");
     await expect(page.getByRole("combobox", { name: "Market demand", exact: true })).toHaveValue("normal");
     await expect(page.locator("#results")).toBeHidden();
+    await openView(page, "Pricing Calendar");
     await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/Rate pending, 90%/);
   };
 
   await expectDefaults();
   await page.reload();
+  await openView(page, "Rate Simulator");
   await expectDefaults();
   await calendarDay(page, "6 August 2027").click();
   await expect(page.getByRole("combobox", { name: "Simulated demand", exact: true })).toHaveValue("high");
@@ -101,6 +119,7 @@ test("Reset restores and persists scenario defaults while retaining calendar edi
 test("previews and confirms CSV separately from simulation, then clears the import on reload", async ({ page }) => {
   await enterScenario(page);
   await saveFridayEdit(page);
+  await openView(page, "Data Import");
 
   const input = page.getByLabel("Hotel data CSV");
   const confirm = page.getByRole("button", { name: "Confirm Import" });
@@ -119,25 +138,35 @@ test("previews and confirms CSV separately from simulation, then clears the impo
   await expect(table).toHaveAccessibleName("Imported data · Showing 4 of 4 records");
   await expect(page.locator("#hotel-import-status")).toHaveText(/4 records imported/);
   await expect(confirm).toBeDisabled();
+  await openView(page, "Rate Simulator");
   await expect(page.locator("#rate")).toHaveText("€660.00");
+  await openView(page, "Pricing Calendar");
   await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€948\.75, 90%/);
 
+  await openView(page, "Rate Simulator");
   await page.getByLabel("Base nightly rate (EUR)").fill("600");
   await expect(page.locator("#rate")).toHaveText("€792.00");
+  await openView(page, "Overview");
+  await expect(page.locator("[data-overview-metric=revpar]")).toHaveText("€570.24");
+  await expect(table).toBeHidden();
+  await openView(page, "Data Import");
   await expect(table.getByRole("cell", { name: "€108.00", exact: true })).toBeVisible();
 
   await page.reload();
   await expect(table).toBeHidden();
   await expect(confirm).toBeDisabled();
   await expect(page.locator("#hotel-import-status")).toBeEmpty();
+  await openView(page, "Rate Simulator");
   await expect(page.getByLabel("Rooms booked", { exact: true })).toHaveValue("72");
   await expect(page.getByLabel("Base nightly rate (EUR)")).toHaveValue("600");
   await expect(page.getByRole("combobox", { name: "Season", exact: true })).toHaveValue("high");
   await expect(page.locator("#rate")).toHaveText("€792.00");
+  await openView(page, "Pricing Calendar");
   await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€1,138\.50, 90%/);
 });
 
 test("rejects invalid CSV before and after a valid import", async ({ page }) => {
+  await openView(page, "Data Import");
   const input = page.getByLabel("Hotel data CSV");
   const confirm = page.getByRole("button", { name: "Confirm Import" });
   const table = page.getByRole("table");
@@ -161,4 +190,65 @@ test("rejects invalid CSV before and after a valid import", async ({ page }) => 
   await expectRejection();
   await expect(table).toHaveAccessibleName("Imported data · Showing 4 of 4 records");
   await expect(table.locator("tbody tr")).toHaveCount(4);
+});
+
+test("workspace navigation shows one view and follows browser history", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const nav = page.getByRole("navigation", { name: "Workspace" });
+  const expectView = async (name, hash) => {
+    await expect(page).toHaveURL(new RegExp(`/${hash}$`));
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+    await expect(nav.locator('[aria-current="page"]')).toHaveText(name);
+    await expect(page.locator("[data-view]:visible")).toHaveCount(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  };
+
+  await expectView("Overview", "");
+  await expect(page.locator("#overview-empty")).toBeVisible();
+  await openView(page, "Rate Simulator");
+  await expectView("Rate Simulator", "#simulator");
+  await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  await openView(page, "Pricing Calendar");
+  await expectView("Pricing Calendar", "#calendar");
+  await openView(page, "Data Import");
+  await expectView("Data Import", "#data-import");
+  await expect(page.locator("#workspace-mode")).toHaveText("Hotel CSV data");
+
+  await page.goBack();
+  await expectView("Pricing Calendar", "#calendar");
+  await page.goBack();
+  await expectView("Rate Simulator", "#simulator");
+  await page.goBack();
+  await expectView("Overview", "");
+  await page.goForward();
+  await expectView("Rate Simulator", "#simulator");
+  await page.goForward();
+  await expectView("Pricing Calendar", "#calendar");
+  await page.goForward();
+  await expectView("Data Import", "#data-import");
+
+  await page.goto("/#calendar");
+  await expectView("Pricing Calendar", "#calendar");
+  await page.reload();
+  await expectView("Pricing Calendar", "#calendar");
+  await page.goto("/#unknown");
+  await expectView("Overview", "#unknown");
+});
+
+test("Overview displays the current simulated metrics or an empty state", async ({ page }) => {
+  await expect(page.locator("#overview-empty")).toBeVisible();
+  await expect(page.locator("#overview-metrics")).toBeHidden();
+  await enterScenario(page);
+  await openView(page, "Overview");
+  const metrics = page.locator("#overview-metrics");
+  await expect(page.locator("#workspace-mode")).toHaveText("Simulation data");
+  await expect(metrics.locator("dd")).toHaveText(["€660.00", "72%", "€660.00", "€475.20", "€47,520.00"]);
+  await expect(metrics).toBeVisible();
+  await expect(page.locator("#overview-empty")).toBeHidden();
+
+  await openView(page, "Rate Simulator");
+  await page.getByLabel("Rooms booked", { exact: true }).fill("101");
+  await openView(page, "Overview");
+  await expect(metrics).toBeHidden();
+  await expect(page.locator("#overview-empty")).toBeVisible();
 });

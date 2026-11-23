@@ -6,13 +6,15 @@ HotelRate AI includes an educational dynamic pricing simulator for a fictional 1
 
 1. Keep the repository files together, including `hotel-import.js` and `sample-hotel-data.csv`.
 2. Open `index.html` in a modern web browser by double-clicking it.
-3. Change the scenario inputs to recalculate automatically, or select **Calculate rate**. **Reset** restores the default scenario.
+3. Open **Rate Simulator** and change the scenario inputs to recalculate automatically, or select **Calculate rate**. **Reset** restores the default scenario.
+
+**Overview** summarizes the current simulated scenario. **Pricing Calendar** shows daily estimates and saved date overrides. Workspace links can be bookmarked and work with browser back and forward.
 
 The app works offline and requires no installation, server, framework, external API or backend.
 
 ## Daily hotel data import
 
-Scroll to **Hotel Data Import** below the simulated calendar. Download [the sample CSV](sample-hotel-data.csv) or select your own file. The browser validates every record and previews up to the first 50 in file order. Select **Confirm Import** to replace the current import with all validated records. An invalid file is rejected in full, and the error identifies the first problem and its CSV line when applicable.
+Open **Data Import**. Download [the sample CSV](sample-hotel-data.csv) or select your own file. The browser validates every record and previews up to the first 50 in file order. Select **Confirm Import** to replace the current import with all validated records. An invalid file is rejected in full, and the error identifies the first problem and its CSV line when applicable.
 
 V3.1 accepts comma-delimited UTF-8 `.csv` files up to 1 MiB (1,048,576 bytes). A UTF-8 BOM, LF and CRLF line endings, quoted fields and doubled quotes inside quoted fields are supported. Use one header row with the exact column names below in any order. Additional columns are allowed and ignored after parsing. Each row must have the same field count as the header. Blank records are rejected.
 
@@ -34,7 +36,7 @@ The browser reads files locally. The app sends no file or imported data to a ser
 
 ### Test the import locally
 
-1. Open `index.html` directly in a browser. Select **Download sample CSV**, then choose that file under **Hotel Data Import**.
+1. Open `index.html` directly in a browser and go to **Data Import**. Select **Download sample CSV**, then choose that file.
 2. Check for four preview rows. The first shows 72% occupancy, €150.00 ADR and €108.00 RevPAR. The second shows 0% occupancy, N/A ADR and €0.00 RevPAR. The last two share a stay date and have different snapshot dates. While that stay date is in the future, they show **Booked room value**.
 3. Click **Confirm Import**. The table changes to **Imported data** and the button disables. Make a copy of the sample and change the first data row's `rooms_sold` to `101`. Select that copy and check that the error identifies CSV row 2, the button remains disabled and the confirmed import stays visible.
 4. Set the simulator to 72 bookings, €500 base rate, High season and Normal demand. Check that it suggests €660.00. Save a simulated date edit, then refresh. Verify the import has cleared and the simulator inputs and calendar edit are restored. Click **Reset** and verify the main scenario returns to its defaults while the date edit remains.
@@ -51,6 +53,8 @@ npm test
 ```
 
 `npm run test:unit` runs the pricing and CSV unit tests using Node's built-in test runner. `npm run test:e2e` starts a local HTTP server and runs the browser tests in headless Chromium. Playwright is the only direct development dependency, and the application has no npm runtime dependencies.
+
+If the default test port (4173) is already in use, set `HOTELRATE_TEST_PORT` to a free port when running the tests.
 
 GitHub Actions runs both suites on every push and pull request and installs Chromium's Linux system dependencies.
 

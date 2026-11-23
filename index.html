@@ -10,149 +10,225 @@
   <script src="hotel-import.js" defer></script>
 </head>
 <body>
-  <header class="masthead">
-    <div class="wrap masthead-inner">
-      <div class="brand">HotelRate <span>AI</span></div>
-      <div class="tag">Educational simulator</div>
-    </div>
-  </header>
-  <main class="wrap">
-    <section class="intro" aria-labelledby="title">
-      <p class="location">Costa Smeralda · Sardinia</p>
-      <h1 id="title">Room pricing simulator</h1>
-      <p>Explore how occupancy, season and market demand affect the nightly rate at a fictional 100-room luxury resort.</p>
-    </section>
-
-    <div class="dashboard">
-      <section class="card controls" aria-labelledby="inputs-title">
-        <h2 id="inputs-title">Scenario inputs</h2>
-        <form id="scenario" novalidate>
-          <div class="room-fields">
-            <label for="total">Total rooms
-              <input id="total" type="number" min="1" step="1" required value="100" aria-describedby="error">
-            </label>
-            <label for="booked">Rooms booked
-              <input id="booked" type="number" min="0" step="1" required value="0" aria-describedby="error">
-            </label>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <aside class="sidebar">
+    <a class="brand" href="#overview">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>HotelRate <strong>AI</strong></span>
+    </a>
+    <nav class="workspace-nav" aria-label="Workspace">
+      <p class="nav-label">Workspace</p>
+      <a href="#overview" aria-current="page"><span class="nav-icon icon-grid" aria-hidden="true"></span>Overview</a>
+      <a href="#simulator"><span class="nav-icon icon-rate" aria-hidden="true"></span>Rate Simulator</a>
+      <a href="#calendar"><span class="nav-icon icon-calendar" aria-hidden="true"></span>Pricing Calendar</a>
+      <a href="#data-import"><span class="nav-icon icon-file" aria-hidden="true"></span>Data Import</a>
+    </nav>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <span class="workspace-title">Revenue workspace</span>
+      <span id="workspace-mode" class="workspace-mode">Simulation data</span>
+    </header>
+    <main id="main-content" class="wrap">
+      <section data-view="overview" aria-labelledby="overview-title">
+        <header class="intro">
+          <h1 id="overview-title" tabindex="-1">Overview</h1>
+          <p>Simulation data for a fictional hotel in Costa Smeralda, Sardinia.</p>
+        </header>
+        <section class="card overview-card" aria-labelledby="overview-metrics-title">
+          <div class="section-header">
+            <h2 id="overview-metrics-title">Simulated one-night metrics</h2>
+            <a class="download-link" href="#simulator">Open Rate Simulator</a>
           </div>
-          <label for="base">Base nightly rate (EUR)
-            <input id="base" type="number" min="0" step="0.01" required value="0" aria-describedby="error scenario-info">
-          </label>
-          <label for="season">Season
-            <select id="season" aria-describedby="error">
-              <option value="low">Low</option>
-              <option value="shoulder" selected>Shoulder</option>
-              <option value="high">High</option>
-              <option value="peak">Peak</option>
-            </select>
-          </label>
-          <label for="demand">Market demand
-            <select id="demand" aria-describedby="error">
-              <option value="low">Low</option>
-              <option value="normal" selected>Normal</option>
-              <option value="high">High</option>
-            </select>
-          </label>
-          <p id="error" class="error" role="alert"></p>
-          <p id="scenario-info" class="note" role="status" hidden></p>
-          <div class="actions">
-            <button type="submit">Calculate rate</button>
-            <button class="secondary" type="reset">Reset</button>
-          </div>
-        </form>
+          <p id="overview-empty" class="empty-message">Enter a valid scenario with a base rate above €0 in the Rate Simulator to see your metrics.</p>
+          <dl id="overview-metrics" class="metrics overview-metrics" hidden>
+            <div><dt>Suggested nightly rate</dt><dd data-overview-metric="rate"></dd></div>
+            <div><dt>Occupancy</dt><dd data-overview-metric="occupancy"></dd></div>
+            <div><dt>Scenario ADR</dt><dd data-overview-metric="adr"></dd></div>
+            <div><dt>Scenario RevPAR</dt><dd data-overview-metric="revpar"></dd></div>
+            <div><dt>Room revenue</dt><dd data-overview-metric="revenue"></dd></div>
+          </dl>
+        </section>
       </section>
 
-      <div id="results" class="results" aria-live="polite" aria-atomic="true" hidden>
-        <section class="rate card" aria-labelledby="rate-title">
-          <h2 id="rate-title">Suggested nightly rate</h2>
-          <div id="rate" class="rate-value">—</div>
-          <div class="rate-details">
-            <span id="difference">—</span>
-            <span id="occupancy">—</span>
+      <section data-view="simulator" aria-labelledby="title" hidden>
+        <header class="intro">
+          <h1 id="title" tabindex="-1">Rate Simulator</h1>
+          <p>Explore how occupancy, season and market demand affect the nightly rate.</p>
+        </header>
+        <div class="dashboard">
+          <section class="card controls" aria-labelledby="inputs-title">
+            <h2 id="inputs-title">Scenario inputs</h2>
+            <form id="scenario" novalidate>
+              <div class="room-fields">
+                <label for="total">Total rooms
+                  <input id="total" type="number" min="1" step="1" required value="100" aria-describedby="error">
+                </label>
+                <label for="booked">Rooms booked
+                  <input id="booked" type="number" min="0" step="1" required value="0" aria-describedby="error">
+                </label>
+              </div>
+              <label for="base">Base nightly rate (EUR)
+                <input id="base" type="number" min="0" step="0.01" required value="0" aria-describedby="error scenario-info">
+              </label>
+              <div class="room-fields">
+                <label for="season">Season
+                  <select id="season" aria-describedby="error">
+                    <option value="low">Low</option>
+                    <option value="shoulder" selected>Shoulder</option>
+                    <option value="high">High</option>
+                    <option value="peak">Peak</option>
+                  </select>
+                </label>
+                <label for="demand">Market demand
+                  <select id="demand" aria-describedby="error">
+                    <option value="low">Low</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">High</option>
+                  </select>
+                </label>
+              </div>
+              <p id="error" class="error" role="alert"></p>
+              <p id="scenario-info" class="note" role="status" hidden></p>
+              <div class="actions">
+                <button type="submit">Calculate rate</button>
+                <button class="secondary" type="reset">Reset</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="rate rate-empty card" aria-labelledby="empty-rate-title">
+            <h2 id="empty-rate-title">Suggested nightly rate</h2>
+            <p class="rate-value" aria-hidden="true">—</p>
+            <p class="rate-empty-note">Your rate and one-night metrics will appear here when the scenario is ready.</p>
+          </section>
+
+          <div id="results" class="results" aria-live="polite" aria-atomic="true" hidden>
+            <section class="rate card" aria-labelledby="rate-title">
+              <h2 id="rate-title">Suggested nightly rate</h2>
+              <div id="rate" class="rate-value">—</div>
+              <div class="rate-details">
+                <span id="difference">—</span>
+                <span id="occupancy">—</span>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="rules-title">
+              <h2 id="rules-title">How the rate is calculated</h2>
+              <dl class="rules">
+                <div><dt id="occupancy-rule">Occupancy</dt><dd id="occupancy-factor">—</dd></div>
+                <div><dt id="season-rule">Season</dt><dd id="season-factor">—</dd></div>
+                <div><dt id="demand-rule">Market demand</dt><dd id="demand-factor">—</dd></div>
+              </dl>
+              <p id="formula" class="formula">—</p>
+            </section>
+
+            <section class="card" aria-labelledby="metrics-title">
+              <h2 id="metrics-title">Illustrative one-night metrics</h2>
+              <dl class="metrics">
+                <div><dt>Scenario ADR</dt><dd id="adr">—</dd></div>
+                <div><dt>Scenario RevPAR</dt><dd id="revpar">—</dd></div>
+                <div><dt>Room revenue</dt><dd id="revenue">—</dd></div>
+              </dl>
+              <p class="note">Assumes every booked room is sold at the suggested rate for one night and all other rooms earn zero. Excludes taxes, fees and extras. Scenario ADR is undefined when no rooms are booked.</p>
+            </section>
           </div>
-        </section>
-
-        <section class="card" aria-labelledby="rules-title">
-          <h2 id="rules-title">How the rate is calculated</h2>
-          <dl class="rules">
-            <div><dt id="occupancy-rule">Occupancy</dt><dd id="occupancy-factor">—</dd></div>
-            <div><dt id="season-rule">Season</dt><dd id="season-factor">—</dd></div>
-            <div><dt id="demand-rule">Market demand</dt><dd id="demand-factor">—</dd></div>
-          </dl>
-          <p id="formula" class="formula">—</p>
-        </section>
-
-        <section class="card" aria-labelledby="metrics-title">
-          <h2 id="metrics-title">Illustrative one-night metrics</h2>
-          <dl class="metrics">
-            <div><dt>Scenario ADR</dt><dd id="adr">—</dd></div>
-            <div><dt>Scenario RevPAR</dt><dd id="revpar">—</dd></div>
-            <div><dt>Room revenue</dt><dd id="revenue">—</dd></div>
-          </dl>
-          <p class="note">Assumes every booked room is sold at the suggested rate for one night and all other rooms earn zero. Excludes taxes, fees and extras. Scenario ADR is undefined when no rooms are booked.</p>
-        </section>
-      </div>
-    </div>
-    <section class="card calendar" aria-labelledby="calendar-title">
-      <h2 id="calendar-title">Simulated monthly pricing</h2>
-      <p class="note">Daily estimates use the scenario above. Saved edits override booked rooms and demand for the selected date. Friday and Saturday rates include a 10% weekend multiplier.</p>
-      <div class="calendar-controls">
-        <label for="calendar-month">Month
-          <select id="calendar-month"></select>
-        </label>
-        <label for="calendar-year">Year
-          <input id="calendar-year" type="number" min="1" max="9999" step="1" value="2027" required>
-        </label>
-      </div>
-      <p id="calendar-message" class="error" role="status"></p>
-      <div id="calendar-grid" class="calendar-grid"></div>
-      <form id="day-editor" hidden>
-        <h3 id="day-title"></h3>
-        <div class="room-fields">
-          <label for="day-booked">Simulated booked rooms
-            <input id="day-booked" type="number" min="0" step="1" required>
-          </label>
-          <label for="day-demand">Simulated demand
-            <select id="day-demand"></select>
-          </label>
         </div>
-        <div class="actions"><button type="submit">Save date</button></div>
-      </form>
-      <p id="storage-message" class="note" role="status"></p>
-    </section>
-    <section class="card hotel-import" aria-labelledby="hotel-import-title">
-      <h2 id="hotel-import-title">Hotel Data Import</h2>
-      <p id="hotel-import-help" class="note">Choose a comma-delimited UTF-8 CSV up to 1 MiB (1,048,576 bytes). The browser reads the file locally. Refreshing clears the imported data.</p>
-      <p class="note">Enter room revenue in EUR, excluding VAT and ancillary services. For stay dates after today, the amount represents booked room value.</p>
-      <p><a href="sample-hotel-data.csv" download>Download sample CSV</a></p>
-      <label for="hotel-csv">Hotel data CSV
-        <input id="hotel-csv" type="file" accept=".csv,text/csv" aria-describedby="hotel-import-help hotel-import-error">
-      </label>
-      <p id="hotel-import-error" class="error" role="alert"></p>
-      <p id="hotel-import-status" class="note" role="status"></p>
-      <div id="hotel-import-preview" class="hotel-import-preview" role="region" aria-label="Hotel data table" tabindex="0" hidden>
-        <table>
-          <caption></caption>
-          <thead>
-            <tr>
-              <th scope="col">Stay date</th>
-              <th scope="col">Snapshot date</th>
-              <th scope="col">Rooms available</th>
-              <th scope="col">Rooms sold</th>
-              <th scope="col">Room amount (EUR)</th>
-              <th scope="col">Amount type</th>
-              <th scope="col">Occupancy</th>
-              <th scope="col">ADR</th>
-              <th scope="col">RevPAR</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <p class="note">Confirming replaces the current import and stores all validated rows in memory.</p>
-      <div class="actions"><button id="hotel-import-confirm" type="button" disabled>Confirm Import</button></div>
-    </section>
-    <footer>Simulator rates use hypothetical inputs and fixed pricing rules. No AI predictions or market validation.</footer>
-  </main>
+      </section>
+
+      <section data-view="calendar" aria-labelledby="calendar-title" hidden>
+        <header class="intro">
+          <h1 id="calendar-title" tabindex="-1">Pricing Calendar</h1>
+          <p>Review simulated rates and occupancy, and adjust assumptions for individual dates.</p>
+        </header>
+        <div class="card calendar">
+          <div class="section-header">
+            <div>
+              <h2>Simulated monthly pricing</h2>
+              <p class="note">Select a date to edit its booked rooms and demand. Friday and Saturday rates include a 10% multiplier.</p>
+            </div>
+            <div class="calendar-controls">
+              <label for="calendar-month">Month
+                <select id="calendar-month"></select>
+              </label>
+              <label for="calendar-year">Year
+                <input id="calendar-year" type="number" min="1" max="9999" step="1" value="2027" required>
+              </label>
+            </div>
+          </div>
+          <p class="calendar-legend"><span class="calendar-override">Override</span> Saved bookings or demand for a date</p>
+          <p id="calendar-message" class="error" role="status"></p>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <form id="day-editor" hidden>
+            <div class="section-header">
+              <h3 id="day-title"></h3>
+              <span id="day-override" class="calendar-override" hidden>Saved override</span>
+            </div>
+            <div class="room-fields">
+              <label for="day-booked">Simulated booked rooms
+                <input id="day-booked" type="number" min="0" step="1" required>
+              </label>
+              <label for="day-demand">Simulated demand
+                <select id="day-demand"></select>
+              </label>
+            </div>
+            <div class="actions"><button type="submit">Save date</button></div>
+          </form>
+          <p id="storage-message" class="note" role="status"></p>
+        </div>
+      </section>
+      <section data-view="data-import" aria-labelledby="hotel-import-title" hidden>
+        <header class="intro">
+          <h1 id="hotel-import-title" tabindex="-1">Data Import</h1>
+          <p>Validate and preview hotel records. Imports stay separate from simulation data.</p>
+        </header>
+        <div class="card hotel-import">
+          <div class="section-header">
+            <h2>Upload hotel data</h2>
+            <a class="download-link" href="sample-hotel-data.csv" download>Download sample CSV</a>
+          </div>
+          <div class="import-setup">
+            <div class="upload-panel">
+              <label for="hotel-csv">Hotel data CSV
+                <input id="hotel-csv" type="file" accept=".csv,text/csv" aria-describedby="hotel-import-help hotel-import-error">
+              </label>
+              <p class="note">Files are read locally. Refreshing clears imported data.</p>
+            </div>
+            <div class="csv-requirements" id="hotel-import-help">
+              <h3>CSV requirements</h3>
+              <p class="note">Comma-delimited UTF-8 <code>.csv</code> up to 1 MiB. Use YYYY-MM-DD dates and EUR amounts excluding VAT and ancillary services. Future stays use booked room value.</p>
+              <p class="csv-columns" aria-label="Required columns"><code>date</code> <code>available_rooms</code> <code>rooms_sold</code> <code>room_revenue</code> <code>snapshot_date</code></p>
+            </div>
+          </div>
+          <p id="hotel-import-error" class="error" role="alert"></p>
+          <p id="hotel-import-status" class="note" role="status"></p>
+          <div id="hotel-import-preview" class="hotel-import-preview" role="region" aria-label="Hotel data table" tabindex="0" hidden>
+            <table>
+              <caption></caption>
+              <thead>
+                <tr>
+                  <th scope="col">Stay date</th>
+                  <th scope="col">Snapshot date</th>
+                  <th scope="col">Rooms available</th>
+                  <th scope="col">Rooms sold</th>
+                  <th scope="col">Room amount (EUR)</th>
+                  <th scope="col">Amount type</th>
+                  <th scope="col">Occupancy</th>
+                  <th scope="col">ADR</th>
+                  <th scope="col">RevPAR</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="import-actions">
+            <p class="note">Confirming replaces the current import and stores all validated rows in memory.</p>
+            <button id="hotel-import-confirm" type="button" disabled>Confirm Import</button>
+          </div>
+        </div>
+      </section>
+      <footer>Educational simulator · Rates use hypothetical inputs and fixed pricing rules. No AI predictions or market validation.</footer>
+    </main>
+  </div>
 </body>
 </html>
