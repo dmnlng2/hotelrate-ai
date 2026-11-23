@@ -11,6 +11,8 @@ const contentTypes = {
   "pricing.js": "text/javascript",
   "script.js": "text/javascript",
   "hotel-import.js": "text/javascript",
+  "vendor/xlsx.mini.min.js": "text/javascript",
+  "sample-hotel-data.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "sample-hotel-data.csv": "text/csv"
 };
 

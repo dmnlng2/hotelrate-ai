@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HotelRate AI V3.1 | Pricing Simulator and Hotel Data Import</title>
+  <title>HotelRate AI V3.2 | Pricing Simulator and Hotel Data Import</title>
   <link rel="stylesheet" href="style.css">
   <script src="pricing.js" defer></script>
   <script src="script.js" defer></script>
+  <script src="vendor/xlsx.mini.min.js" defer></script>
   <script src="hotel-import.js" defer></script>
 </head>
 <body>
@@ -185,18 +186,22 @@
         <div class="card hotel-import">
           <div class="section-header">
             <h2>Upload hotel data</h2>
-            <a class="download-link" href="sample-hotel-data.csv" download>Download sample CSV</a>
+            <div class="sample-downloads">
+              <a class="download-link" href="sample-hotel-data.csv" download>Download sample CSV</a>
+              <a class="download-link" href="sample-hotel-data.xlsx" download>Download sample Excel</a>
+            </div>
           </div>
           <div class="import-setup">
             <div class="upload-panel">
-              <label for="hotel-csv">Hotel data CSV
-                <input id="hotel-csv" type="file" accept=".csv,text/csv" aria-describedby="hotel-import-help hotel-import-error">
+              <label for="hotel-csv">Hotel data CSV or Excel
+                <input id="hotel-csv" type="file" accept=".csv,.xlsx" aria-describedby="hotel-import-help hotel-import-error">
               </label>
+              <p id="hotel-import-file" class="note" aria-live="polite"></p>
               <p class="note">Files are read locally. Refreshing clears imported data.</p>
             </div>
             <div class="csv-requirements" id="hotel-import-help">
-              <h3>CSV requirements</h3>
-              <p class="note">Comma-delimited UTF-8 <code>.csv</code> up to 1 MiB. Use YYYY-MM-DD dates and EUR amounts excluding VAT and ancillary services. Future stays use booked room value.</p>
+              <h3>File requirements</h3>
+              <p class="note">UTF-8 <code>.csv</code> up to 1 MiB or Excel <code>.xlsx</code> up to 5 MiB. Put the headers in the first row of the first worksheet. Use Excel dates or YYYY-MM-DD text and EUR amounts excluding VAT and ancillary services. Future stays use booked room value.</p>
               <p class="csv-columns" aria-label="Required columns"><code>date</code> <code>available_rooms</code> <code>rooms_sold</code> <code>room_revenue</code> <code>snapshot_date</code></p>
             </div>
           </div>

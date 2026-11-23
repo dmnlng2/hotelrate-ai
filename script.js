@@ -333,7 +333,7 @@ function setupWorkspaceNavigation() {
     }
 
     const isImport = activeView.dataset.view === "data-import";
-    mode.textContent = isImport ? "Hotel CSV data" : "Simulation data";
+    mode.textContent = isImport ? "Hotel CSV and Excel data" : "Simulation data";
     mode.classList.toggle("workspace-mode-import", isImport);
     const heading = byId(activeView.getAttribute("aria-labelledby"));
     document.title = heading.textContent + " | HotelRate AI";

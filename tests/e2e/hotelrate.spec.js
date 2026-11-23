@@ -3,6 +3,14 @@
 const { join } = require("node:path");
 const { test, expect } = require("@playwright/test");
 
+const { headers, example, workbookBytes } = require("../xlsx-fixtures.js");
+
+const sampleXlsx = join(__dirname, "../../sample-hotel-data.xlsx");
+const excelUpload = (rows) => ({
+  name: "hotel.xlsx",
+  mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  buffer: workbookBytes(rows)
+});
 const sampleCsv = join(__dirname, "../../sample-hotel-data.csv");
 const invalidCsv = {
   name: "invalid.csv",
@@ -121,7 +129,7 @@ test("previews and confirms CSV separately from simulation, then clears the impo
   await saveFridayEdit(page);
   await openView(page, "Data Import");
 
-  const input = page.getByLabel("Hotel data CSV");
+  const input = page.getByLabel("Hotel data CSV or Excel");
   const confirm = page.getByRole("button", { name: "Confirm Import" });
   const table = page.getByRole("table");
   await expect(confirm).toBeDisabled();
@@ -167,7 +175,7 @@ test("previews and confirms CSV separately from simulation, then clears the impo
 
 test("rejects invalid CSV before and after a valid import", async ({ page }) => {
   await openView(page, "Data Import");
-  const input = page.getByLabel("Hotel data CSV");
+  const input = page.getByLabel("Hotel data CSV or Excel");
   const confirm = page.getByRole("button", { name: "Confirm Import" });
   const table = page.getByRole("table");
   const expectRejection = async () => {
@@ -192,6 +200,75 @@ test("rejects invalid CSV before and after a valid import", async ({ page }) => 
   await expect(table.locator("tbody tr")).toHaveCount(4);
 });
 
+test("downloads, previews and confirms Excel without changing saved simulator data", async ({ page }) => {
+  await enterScenario(page);
+  await saveFridayEdit(page);
+  const storage = () => page.evaluate(() => Object.entries(localStorage).sort());
+  const saved = await storage();
+  await openView(page, "Data Import");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download sample Excel" }).click();
+  expect((await downloadPromise).suggestedFilename()).toBe("sample-hotel-data.xlsx");
+  const input = page.getByLabel("Hotel data CSV or Excel");
+  const confirm = page.getByRole("button", { name: "Confirm Import" });
+  const table = page.getByRole("table");
+  await expect(confirm).toBeDisabled();
+  await input.setInputFiles(sampleXlsx);
+  await expect(page.locator("#hotel-import-file")).toHaveText("sample-hotel-data.xlsx · Excel (.xlsx)");
+  await expect(table).toHaveAccessibleName("Excel preview · Showing 4 of 4 records");
+  await expect(table.locator("tbody tr").first().getByRole("cell")).toHaveText([
+    "2025-08-14", "2025-08-15", "100", "72", "€10,800.00",
+    "Room revenue", "72%", "€150.00", "€108.00"
+  ]);
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(table).toHaveAccessibleName("Imported data · Showing 4 of 4 records");
+  await expect(confirm).toBeDisabled();
+  expect(await storage()).toEqual(saved);
+
+  await openView(page, "Overview");
+  await expect(page.locator("[data-overview-metric=revpar]")).toHaveText("€475.20");
+  await openView(page, "Data Import");
+  await page.reload();
+  await expect(table).toBeHidden();
+  await expect(confirm).toBeDisabled();
+  await expect(page.locator("#hotel-import-file")).toBeHidden();
+  expect(await storage()).toEqual(saved);
+  await openView(page, "Pricing Calendar");
+  await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€948\.75, 90%/);
+});
+
+test("validates beyond the 50-row Excel preview and clears pending records on failure", async ({ page }) => {
+  await openView(page, "Data Import");
+  const input = page.getByLabel("Hotel data CSV or Excel");
+  const confirm = page.getByRole("button", { name: "Confirm Import" });
+  const table = page.getByRole("table");
+  const rows = Array.from({ length: 55 }, (_, index) => [
+    new Date(Date.UTC(2024, 0, index + 1)), ...example.slice(1)
+  ]);
+  const valid = excelUpload([headers, ...rows]);
+  const invalid = excelUpload([headers, ...rows.slice(0, -1), [rows.at(-1)[0], 100, 101, 500, example[4]]]);
+
+  await input.setInputFiles(valid);
+  await expect(table).toHaveAccessibleName("Excel preview · Showing 50 of 55 records");
+  await expect(table.locator("tbody tr")).toHaveCount(50);
+  await expect(confirm).toBeEnabled();
+  await input.setInputFiles(invalid);
+  await expect(page.locator("#hotel-import-error")).toHaveText(/Excel row 56: rooms_sold/);
+  await expect(table).toBeHidden();
+  await expect(confirm).toBeDisabled();
+
+  await input.setInputFiles(valid);
+  await confirm.click();
+  await expect(table).toHaveAccessibleName("Imported data · Showing 50 of 55 records");
+  await expect(page.locator("#hotel-import-status")).toHaveText(/55 records imported/);
+  await input.setInputFiles(invalid);
+  await expect(page.locator("#hotel-import-error")).toHaveText(/Excel row 56: rooms_sold/);
+  await expect(table).toHaveAccessibleName("Imported data · Showing 50 of 55 records");
+  await expect(confirm).toBeDisabled();
+});
+
 test("workspace navigation shows one view and follows browser history", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const nav = page.getByRole("navigation", { name: "Workspace" });
@@ -212,7 +289,7 @@ test("workspace navigation shows one view and follows browser history", async ({
   await expectView("Pricing Calendar", "#calendar");
   await openView(page, "Data Import");
   await expectView("Data Import", "#data-import");
-  await expect(page.locator("#workspace-mode")).toHaveText("Hotel CSV data");
+  await expect(page.locator("#workspace-mode")).toHaveText("Hotel CSV and Excel data");
 
   await page.goBack();
   await expectView("Pricing Calendar", "#calendar");
