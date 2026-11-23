@@ -40,13 +40,27 @@ The browser reads files locally. The app sends no file or imported data to a ser
 4. Set the simulator to 72 bookings, €500 base rate, High season and Normal demand. Check that it suggests €660.00. Save a simulated date edit, then refresh. Verify the import has cleared and the simulator inputs and calendar edit are restored. Click **Reset** and verify the main scenario returns to its defaults while the date edit remains.
 5. With Node.js 18 or later, run `node --test tests/hotel-import.test.js` from the repository root. The suite requires no dependencies.
 
+## Automated tests
+
+With Node.js 24 and npm, run these commands from the repository root:
+
+```sh
+npm ci
+npx playwright install --only-shell chromium
+npm test
+```
+
+`npm run test:unit` runs the pricing and CSV unit tests using Node's built-in test runner. `npm run test:e2e` starts a local HTTP server and runs the browser tests in headless Chromium. Playwright is the only direct development dependency, and the application has no npm runtime dependencies.
+
+GitHub Actions runs both suites on every push and pull request and installs Chromium's Linux system dependencies.
+
 ## Features and technologies
 
 - Enter room inventory, booked rooms, base rate in EUR, season and demand. Validation checks whole-number room counts, booked rooms within inventory and a non-negative base rate in euros and cents.
 - See occupancy, the suggested nightly rate, the percentage change from the base rate and the three factors used in the calculation.
 - Explore illustrative average daily rate (ADR), revenue per available room (RevPAR) and room revenue.
 - Browse a simulated monthly pricing calendar, starting in August 2027. Choose a month and year to see each day's suggested nightly rate and occupancy.
-- `index.html` defines the dashboard, `style.css` controls the responsive layout and `script.js` implements the pricing logic, validation and display updates.
+- `index.html` defines the dashboard, `style.css` controls the responsive layout and `pricing.js` contains the pricing rules and calculations, and `script.js` handles validation and display updates.
 
 ## Main scenario defaults and local storage
 
@@ -80,7 +94,7 @@ Occupancy is booked rooms divided by total rooms. The model uses the unrounded o
 | Demand | Normal | 1.00 |
 | Demand | High | 1.15 |
 
-The suggested nightly rate is the base rate multiplied by the three factors and rounded to cents. The percentage difference is the suggested rate minus the base rate, divided by the base rate. Edit `PRICING_RULES` in `script.js` to experiment. If you change the occupancy thresholds, keep the bands in ascending order and update their labels.
+The suggested nightly rate is the base rate multiplied by the three factors and rounded to cents. The percentage difference is the suggested rate minus the base rate, divided by the base rate. Edit `PRICING_RULES` in `pricing.js` to experiment. If you change the occupancy thresholds, keep the bands in ascending order and update their labels.
 
 A scenario with 72 bookings out of 100 rooms, a €500 base rate, high season and normal demand produces 72% occupancy and a €660.00 suggestion, 32% above the base rate.
 
