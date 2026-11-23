@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HotelRate AI V3.2 | Pricing Simulator and Hotel Data Import</title>
+  <title>HotelRate AI V3.3 | Pricing Simulator and Hotel Performance</title>
   <link rel="stylesheet" href="style.css">
   <script src="pricing.js" defer></script>
   <script src="script.js" defer></script>
   <script src="vendor/xlsx.mini.min.js" defer></script>
+  <script src="hotel-data.js" defer></script>
+  <script src="hotel-performance.js" defer></script>
   <script src="hotel-import.js" defer></script>
 </head>
 <body>
@@ -23,6 +25,7 @@
       <a href="#simulator"><span class="nav-icon icon-rate" aria-hidden="true"></span>Rate Simulator</a>
       <a href="#calendar"><span class="nav-icon icon-calendar" aria-hidden="true"></span>Pricing Calendar</a>
       <a href="#data-import"><span class="nav-icon icon-file" aria-hidden="true"></span>Data Import</a>
+      <a href="#hotel-performance"><span class="nav-icon icon-rate" aria-hidden="true"></span>Hotel Performance</a>
     </nav>
   </aside>
   <div class="workspace">
@@ -230,6 +233,46 @@
             <p class="note">Confirming replaces the current import and stores all validated rows in memory.</p>
             <button id="hotel-import-confirm" type="button" disabled>Confirm Import</button>
           </div>
+        </div>
+      </section>
+      <section data-view="hotel-performance" class="hotel-performance" aria-labelledby="performance-title" hidden>
+        <header class="intro">
+          <h1 id="performance-title" tabindex="-1">Hotel Performance</h1>
+          <p>Explore daily performance and monthly totals from a confirmed hotel data snapshot.</p>
+        </header>
+        <div id="performance-empty" class="card">
+          <p class="empty-message">No hotel data imported yet. Import a CSV or Excel file to explore daily performance.</p>
+          <a class="download-link" href="#data-import">Go to Data Import</a>
+        </div>
+        <div id="performance-content" hidden>
+          <section class="card" aria-labelledby="performance-summary-title">
+            <div class="section-header">
+              <h2 id="performance-summary-title">Monthly performance</h2>
+              <div>
+                <label for="performance-snapshot">Snapshot date</label>
+                <select id="performance-snapshot"></select>
+              </div>
+            </div>
+            <p id="performance-coverage" class="note" role="status"></p>
+            <dl id="performance-monthly" class="metrics performance-metrics" hidden></dl>
+            <p id="performance-value-note" class="note" hidden>Room value includes revenue for stays through today and booked value for future stays, as reported by the source.</p>
+          </section>
+          <section class="card" aria-labelledby="performance-month">
+            <div class="section-header">
+              <h2 id="performance-month" aria-live="polite"></h2>
+              <div class="performance-month-controls">
+                <button type="button" class="secondary" id="performance-prev" aria-label="Previous month">‹</button>
+                <button type="button" class="secondary" id="performance-next" aria-label="Next month">›</button>
+              </div>
+            </div>
+            <p class="note">Days with a record show occupancy and ADR. A dash indicates missing data.</p>
+            <div id="performance-grid" class="performance-grid"></div>
+          </section>
+          <section class="card" aria-labelledby="performance-detail-title">
+            <h2 id="performance-detail-title">Daily performance</h2>
+            <p id="performance-detail-status" class="note" role="status"></p>
+            <dl id="performance-daily" class="metrics performance-metrics" hidden></dl>
+          </section>
         </div>
       </section>
       <footer>Educational simulator · Rates use hypothetical inputs and fixed pricing rules. No AI predictions or market validation.</footer>

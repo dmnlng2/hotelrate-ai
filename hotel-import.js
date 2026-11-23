@@ -1,6 +1,9 @@
 "use strict";
 
 (() => {
+  const { hotelMetrics, localHotelDate, hotelValueLabel } = typeof module === "undefined"
+    ? hotelData
+    : require("./hotel-data.js");
   const MAX_FILE_BYTES = 1024 * 1024;
   const MAX_XLSX_BYTES = 5 * 1024 * 1024;
   const PREVIEW_LIMIT = 50;
@@ -126,9 +129,7 @@
       firstLines.set(key, line);
       rows.push({
         date, snapshotDate, availableRooms, roomsSold, roomRevenue,
-        occupancy: roomsSold / availableRooms,
-        adr: roomsSold > 0 ? roomRevenue / roomsSold : null,
-        revpar: roomRevenue / availableRooms
+        ...hotelMetrics(availableRooms, roomsSold, roomRevenue)
       });
     }
 
@@ -234,7 +235,7 @@
     return parseHotelXlsx(await readFileBytes(file));
   }
 
-  function setupImport() {
+  function setupImport(onConfirm) {
     const input = document.getElementById("hotel-csv");
     const confirm = document.getElementById("hotel-import-confirm");
     const error = document.getElementById("hotel-import-error");
@@ -250,19 +251,14 @@
     let importedRows = [];
 
     function showRows(rows, label) {
-      const now = new Date();
-      const today = [
-        String(now.getFullYear()).padStart(4, "0"),
-        String(now.getMonth() + 1).padStart(2, "0"),
-        String(now.getDate()).padStart(2, "0")
-      ].join("-");
+      const today = localHotelDate();
       const visibleRows = rows.slice(0, PREVIEW_LIMIT);
       tableBody.replaceChildren();
       for (const row of visibleRows) {
         const tr = tableBody.insertRow();
         for (const value of [
           row.date, row.snapshotDate, row.availableRooms, row.roomsSold, euro.format(row.roomRevenue),
-          row.date > today ? "Booked room value" : "Room revenue",
+          hotelValueLabel(row.date, today),
           percent.format(row.occupancy), row.adr === null ? "N/A" : euro.format(row.adr),
           euro.format(row.revpar)
         ]) {
@@ -310,9 +306,10 @@
       input.value = "";
       showRows(importedRows, "Imported data");
       status.textContent = `${importedRows.length} records imported. Refreshing the page clears this import.`;
+      onConfirm(importedRows);
     });
   }
 
-  if (typeof document !== "undefined") setupImport();
+  if (typeof document !== "undefined") setupImport(setupHotelPerformance());
   if (typeof module !== "undefined") module.exports = { MAX_FILE_BYTES, MAX_XLSX_BYTES, parseHotelCsv, readHotelCsv, parseHotelXlsx, readHotelXlsx };
 })();

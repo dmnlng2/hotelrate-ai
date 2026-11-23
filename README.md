@@ -1,4 +1,4 @@
-# HotelRate AI V3.2
+# HotelRate AI V3.3
 
 HotelRate AI includes an educational dynamic pricing simulator for a fictional 100-room luxury resort in Costa Smeralda, Sardinia, and a separate daily hotel data import.
 
@@ -48,6 +48,16 @@ The browser reads files locally. The app sends no file or imported data to a ser
 3. Click **Confirm Import**. The table changes to **Imported data** and the button disables. Make a copy of the sample and change the first data row's `rooms_sold` to `101`. Select that copy and check that the error identifies Excel row 2, the button remains disabled and the confirmed import stays visible.
 4. Set the simulator to 72 bookings, €500 base rate, High season and Normal demand. Check that it suggests €660.00. Save a simulated date edit, then refresh. Verify the import has cleared and the simulator inputs and calendar edit are restored. Click **Reset** and verify the main scenario returns to its defaults while the date edit remains.
 
+## Hotel Performance
+
+Confirm a CSV or Excel import in **Data Import**, then open **Hotel Performance**. The workspace defaults to the latest snapshot date in the confirmed dataset and opens the month of its earliest stay date. Changing snapshots opens the earliest stay month of the new selection. Each snapshot is shown on its own, even when the same stay date appears in multiple snapshots. Navigating between workspaces keeps the selection during the page session. Confirming a replacement file resets the selection to the latest snapshot in the replacement.
+
+The Monday-first calendar shows occupancy and ADR on dates with imported records. Select a date to see its stay and snapshot dates, room counts, occupancy, ADR, RevPAR and room value. A dash marks a missing record. Missing dates contribute no data to the summary, and a month without records shows an empty state. A recorded day with zero sold rooms shows zero occupancy and **N/A** for ADR.
+
+The monthly cards report how many dates contribute to the summary. They sum available room-nights, sold room-nights and room value for the selected snapshot and visible month. Occupancy divides total sold room-nights by total available room-nights. ADR divides total room value by total sold room-nights and displays **N/A** when none were sold. RevPAR divides total room value by total available room-nights.
+
+Dates after today use **Booked room value**. Dates through today use **Room revenue** as reported by the source. Months containing both use **Room value** with an explanatory note. Refreshing clears the imported records and the performance view. The Rate Simulator, simulated Pricing Calendar and their saved settings use their own data.
+
 ## Automated tests
 
 With Node.js 24 and npm, run these commands from the repository root:
@@ -58,7 +68,7 @@ npx playwright install --only-shell chromium
 npm test
 ```
 
-`npm run test:unit` runs the pricing, CSV and XLSX unit tests using Node's built-in test runner. `npm run test:e2e` starts a local HTTP server and runs the browser tests in headless Chromium.
+`npm run test:unit` runs the pricing, CSV, XLSX and hotel performance unit tests using Node's built-in test runner. `npm run test:e2e` starts a local HTTP server and runs the browser tests in headless Chromium.
 
 If the default test port (4173) is already in use, set `HOTELRATE_TEST_PORT` to a free port when running the tests.
 

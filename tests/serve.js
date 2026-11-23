@@ -10,6 +10,8 @@ const contentTypes = {
   "style.css": "text/css",
   "pricing.js": "text/javascript",
   "script.js": "text/javascript",
+  "hotel-data.js": "text/javascript",
+  "hotel-performance.js": "text/javascript",
   "hotel-import.js": "text/javascript",
   "vendor/xlsx.mini.min.js": "text/javascript",
   "sample-hotel-data.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
