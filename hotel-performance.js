@@ -2,15 +2,6 @@
 
 const performanceData = typeof module === "undefined" ? hotelData : require("./hotel-data.js");
 
-function groupHotelSnapshots(rows) {
-  const snapshots = new Map();
-  for (const row of rows) {
-    if (!snapshots.has(row.snapshotDate)) snapshots.set(row.snapshotDate, new Map());
-    snapshots.get(row.snapshotDate).set(row.date, row);
-  }
-  return snapshots;
-}
-
 function summarizeHotelMonth(snapshot, month, today) {
   let count = 0;
   let availableRooms = 0;
@@ -20,9 +11,9 @@ function summarizeHotelMonth(snapshot, month, today) {
   for (const row of snapshot.values()) {
     if (row.date.slice(0, 7) !== month) continue;
     count += 1;
-    availableRooms += row.availableRooms;
-    roomsSold += row.roomsSold;
-    roomRevenue += row.roomRevenue;
+    availableRooms = availableRooms === null || row.availableRooms === null ? null : availableRooms + row.availableRooms;
+    roomsSold = roomsSold === null || row.roomsSold === null ? null : roomsSold + row.roomsSold;
+    roomRevenue = roomRevenue === null || row.roomRevenue === null ? null : roomRevenue + row.roomRevenue;
     if (row.date > today) futureDates += 1;
   }
   if (!count) return null;
@@ -55,7 +46,10 @@ function setupHotelPerformance() {
   const count = new Intl.NumberFormat("en-IE");
   const monthName = new Intl.DateTimeFormat("en-IE", { month: "long", year: "numeric", timeZone: "UTC" });
   const dayName = new Intl.DateTimeFormat("en-IE", { dateStyle: "full", timeZone: "UTC" });
-  const amount = (value) => value === null ? "N/A" : currency.format(value);
+  const format = (formatter) => (value) => value === null ? "N/A" : formatter.format(value);
+  const amount = format(currency);
+  const rooms = format(count);
+  const occupancy = format(percentage);
   let snapshots;
   let snapshot;
   let month;
@@ -77,7 +71,7 @@ function setupHotelPerformance() {
 
   function performanceMetrics(row, valueLabel) {
     return [
-      ["Occupancy", percentage.format(row.occupancy)],
+      ["Occupancy", occupancy(row.occupancy)],
       ["ADR", amount(row.adr)],
       ["RevPAR", amount(row.revpar)],
       [valueLabel, amount(row.roomRevenue)]
@@ -87,11 +81,13 @@ function setupHotelPerformance() {
   function renderDetail() {
     const row = snapshot.get(selectedDate);
     detailStatus.textContent = row ? "" : `${selectedDate} · No imported data for this date.`;
+    const missing = row ? performanceData.missingHotelMetrics(row) : [];
+    if (missing.length) detailStatus.textContent = `INCOMPLETE DATA · Missing ${missing.join(", ")}.`;
     renderMetrics(daily, row ? [
       ["Stay date", row.date],
       ["Snapshot date", row.snapshotDate],
-      ["Available rooms", count.format(row.availableRooms)],
-      ["Rooms sold", count.format(row.roomsSold)],
+      ["Available rooms", rooms(row.availableRooms)],
+      ["Rooms sold", rooms(row.roomsSold)],
       ...performanceMetrics(row, performanceData.hotelValueLabel(row.date, performanceData.localHotelDate()))
     ] : []);
   }
@@ -109,8 +105,8 @@ function setupHotelPerformance() {
       : "No imported data for this month in the selected snapshot.";
     valueNote.hidden = !summary?.mixed;
     renderMetrics(monthly, summary ? [
-      ["Available room-nights", count.format(summary.availableRooms)],
-      ["Sold room-nights", count.format(summary.roomsSold)],
+      ["Available room-nights", rooms(summary.availableRooms)],
+      ["Sold room-nights", rooms(summary.roomsSold)],
       ...performanceMetrics(summary, summary.valueLabel)
     ] : []);
 
@@ -134,7 +130,7 @@ function setupHotelPerformance() {
       button.dataset.date = date;
       button.classList.toggle("performance-day-with-data", Boolean(row));
       button.setAttribute("aria-pressed", String(date === selectedDate));
-      const stats = row ? [percentage.format(row.occupancy), amount(row.adr)] : ["—"];
+      const stats = row ? [occupancy(row.occupancy), amount(row.adr)] : ["—"];
       const description = row ? `${stats[0]} occupancy, ADR ${stats[1]}` : "no imported data";
       button.setAttribute("aria-label", `${dayName.format(new Date(date + "T00:00:00Z"))}, ${description}`);
       for (const text of [day, ...stats]) {
@@ -174,9 +170,9 @@ function setupHotelPerformance() {
     renderDetail();
   });
 
-  return (rows) => {
-    snapshots = groupHotelSnapshots(rows);
-    const dates = Array.from(snapshots.keys()).sort().reverse();
+  return (dataset) => {
+    snapshots = dataset.snapshots;
+    const dates = dataset.snapshotDates;
     const options = document.createDocumentFragment();
     for (const date of dates) options.append(new Option(date, date));
     selector.replaceChildren(options);
@@ -187,4 +183,4 @@ function setupHotelPerformance() {
   };
 }
 
-if (typeof module !== "undefined") module.exports = { groupHotelSnapshots, summarizeHotelMonth };
+if (typeof module !== "undefined") module.exports = { groupHotelSnapshots: performanceData.groupHotelSnapshots, summarizeHotelMonth };

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HotelRate AI V3.3 | Pricing Simulator and Hotel Performance</title>
+  <title>HotelRate AI V3.4 | Hybrid Pricing Calendar and Hotel Performance</title>
   <link rel="stylesheet" href="style.css">
   <script src="pricing.js" defer></script>
   <script src="script.js" defer></script>
@@ -143,13 +143,13 @@
       <section data-view="calendar" aria-labelledby="calendar-title" hidden>
         <header class="intro">
           <h1 id="calendar-title" tabindex="-1">Pricing Calendar</h1>
-          <p>Review simulated rates and occupancy, and adjust assumptions for individual dates.</p>
+          <p>Review recommended nightly rates alongside imported or simulated occupancy.</p>
         </header>
         <div class="card calendar">
           <div class="section-header">
             <div>
-              <h2>Simulated monthly pricing</h2>
-              <p class="note">Select a date to edit its booked rooms and demand. Friday and Saturday rates include a 10% multiplier.</p>
+              <h2>Monthly pricing</h2>
+              <p class="note">Select a date to view its source and adjust demand. Friday and Saturday rates include a 10% multiplier.</p>
             </div>
             <div class="calendar-controls">
               <label for="calendar-month">Month
@@ -160,7 +160,7 @@
               </label>
             </div>
           </div>
-          <p class="calendar-legend"><span class="calendar-override">Override</span> Saved bookings or demand for a date</p>
+          <p class="calendar-legend"><span class="calendar-override">Override</span> Saved demand or simulated bookings for a date</p>
           <p id="calendar-message" class="error" role="status"></p>
           <div id="calendar-grid" class="calendar-grid"></div>
           <form id="day-editor" hidden>
@@ -168,11 +168,22 @@
               <h3 id="day-title"></h3>
               <span id="day-override" class="calendar-override" hidden>Saved override</span>
             </div>
+            <p id="day-source" class="calendar-source"></p>
+            <p id="day-data-status" class="note"></p>
+            <dl id="day-import-metrics" class="metrics performance-metrics" hidden>
+              <div><dt>Snapshot date</dt><dd id="day-snapshot"></dd></div>
+              <div><dt>Available rooms</dt><dd id="day-available"></dd></div>
+              <div><dt>Rooms sold</dt><dd id="day-sold"></dd></div>
+              <div><dt>Occupancy</dt><dd id="day-occupancy"></dd></div>
+              <div><dt id="day-value-label">Room revenue</dt><dd id="day-value"></dd></div>
+              <div><dt>ADR</dt><dd id="day-adr"></dd></div>
+              <div><dt>Recommended nightly rate</dt><dd id="day-rate"></dd></div>
+            </dl>
             <div class="room-fields">
               <label for="day-booked">Simulated booked rooms
                 <input id="day-booked" type="number" min="0" step="1" required>
               </label>
-              <label for="day-demand">Simulated demand
+              <label for="day-demand"><span id="day-demand-label">Simulated demand</span>
                 <select id="day-demand"></select>
               </label>
             </div>
@@ -184,7 +195,7 @@
       <section data-view="data-import" aria-labelledby="hotel-import-title" hidden>
         <header class="intro">
           <h1 id="hotel-import-title" tabindex="-1">Data Import</h1>
-          <p>Validate and preview hotel records. Imports stay separate from simulation data.</p>
+          <p>Validate and preview hotel records for Hotel Performance and Pricing Calendar.</p>
         </header>
         <div class="card hotel-import">
           <div class="section-header">
@@ -204,7 +215,7 @@
             </div>
             <div class="csv-requirements" id="hotel-import-help">
               <h3>File requirements</h3>
-              <p class="note">UTF-8 <code>.csv</code> up to 1 MiB or Excel <code>.xlsx</code> up to 5 MiB. Put the headers in the first row of the first worksheet. Use Excel dates or YYYY-MM-DD text and EUR amounts excluding VAT and ancillary services. Future stays use booked room value.</p>
+              <p class="note">UTF-8 <code>.csv</code> up to 1 MiB or Excel <code>.xlsx</code> up to 5 MiB. Put the headers in the first row of the first worksheet. Use Excel dates or YYYY-MM-DD text and EUR amounts excluding VAT and ancillary services. Future stays use booked room value. Leave unknown metrics blank.</p>
               <p class="csv-columns" aria-label="Required columns"><code>date</code> <code>available_rooms</code> <code>rooms_sold</code> <code>room_revenue</code> <code>snapshot_date</code></p>
             </div>
           </div>

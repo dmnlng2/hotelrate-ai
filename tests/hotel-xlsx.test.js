@@ -97,3 +97,11 @@ test("rejects oversized Excel uploads before reading them", async () => {
   const file = { name: "large.xlsx", size: MAX_XLSX_BYTES + 1, arrayBuffer: () => assert.fail("File was read") };
   await assert.rejects(readHotelXlsx(file), /exceeds 5 MiB/);
 });
+
+test("preserves blank Excel metric cells as unknown", () => {
+  const [row] = parse([headers, example.with(1, undefined).with(3, undefined)]);
+  assert.equal(row.availableRooms, null);
+  assert.equal(row.roomsSold, example[2]);
+  assert.equal(row.roomRevenue, null);
+  assert.equal(row.occupancy, null);
+});

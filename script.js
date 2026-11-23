@@ -25,7 +25,7 @@ const factorText = (factor) => "× " + factor.toFixed(2);
 // Browser constraints check required values, minimums and decimal precision.
 // The relationship between the two room counts needs a separate check.
 function validateScenario(scenario) {
-  const { total, booked, base, season, demand } = scenario;
+  const { total, booked } = scenario;
   if (!fields.total.validity.valid || !Number.isSafeInteger(total)) {
     return { field: "total", message: "Enter a positive whole number of total rooms." };
   }
@@ -35,6 +35,10 @@ function validateScenario(scenario) {
   if (booked > total) {
     return { field: "booked", message: "Booked rooms cannot exceed total rooms." };
   }
+  return validatePricingInputs(scenario);
+}
+
+function validatePricingInputs({ base, season, demand }) {
   if (!fields.base.validity.valid || !Number.isSafeInteger(Math.round(base * 100))) {
     return { field: "base", message: "Enter a non-negative base rate in euros and cents." };
   }
@@ -125,6 +129,7 @@ function runSimulation({ focusError = false, save = false } = {}) {
   }
   byId("error").textContent = error ? error.message : "";
   calendarScenario = error ? null : scenario;
+  calendarPricing = validatePricingInputs(scenario) ? null : scenario;
   renderCalendar();
   overviewMetrics.hidden = Boolean(error) || waitingForRate;
   overviewEmpty.hidden = !overviewMetrics.hidden;
@@ -156,6 +161,8 @@ const shortDateFormat = new Intl.DateTimeFormat("en-IE", {
   weekday: "short", day: "numeric", timeZone: "UTC"
 });
 let calendarScenario = null;
+let calendarPricing = null;
+let calendarDataset;
 let selectedDate = null;
 const dailyEdits = new Map();
 
@@ -173,7 +180,7 @@ try {
   const savedEdits = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
   for (const [key, edit] of Object.entries(savedEdits ?? {})) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(key) && edit &&
-        Number.isSafeInteger(edit.booked) && edit.booked >= 0 &&
+        (edit.booked === null || (Number.isSafeInteger(edit.booked) && edit.booked >= 0)) &&
         Object.hasOwn(PRICING_RULES.demand, edit.demand)) {
       dailyEdits.set(key, edit);
     }
@@ -190,10 +197,38 @@ for (const option of fields.demand.options) {
   dayDemand.add(new Option(option.text, option.value));
 }
 
-function scenarioForDate(date) {
-  const edit = dailyEdits.get(dateKey(date));
-  if (!edit) return calendarScenario;
-  return { ...calendarScenario, ...edit, booked: Math.min(edit.booked, calendarScenario.total) };
+function calendarDayData(date) {
+  const key = dateKey(date);
+  const row = calendarDataset?.latestByStay.get(key);
+  const edit = dailyEdits.get(key);
+  const missing = row ? hotelData.missingHotelMetrics(row) : [];
+  const source = row ? (missing.length ? "INCOMPLETE DATA" : "IMPORTED DATA") : "SIMULATION";
+  const pricing = row ? calendarPricing : calendarScenario;
+  const total = row ? row.availableRooms : calendarScenario?.total;
+  const booked = row ? row.roomsSold : calendarScenario
+    ? Math.min(edit?.booked ?? calendarScenario.booked, total) : null;
+  const occupancy = row ? row.occupancy : calendarScenario ? booked / total : null;
+  const demand = edit?.demand ?? fields.demand.value;
+  const weekend = PRICING_RULES.weekend;
+  const factor = weekend.days.includes(date.getUTCDay()) ? weekend.factor : 1;
+  const rate = pricing?.base > 0 && occupancy !== null
+    ? calculatePricing({ ...pricing, total, booked, demand }, factor).rate : null;
+  return { row, edit, missing, source, occupancy, rate, total, booked, demand };
+}
+
+function updateCalendarDataset(dataset) {
+  if (!calendarDataset) {
+    const stays = [...dataset.latestByStay.keys()].sort();
+    const visibleMonth = calendarYear.validity.valid
+      ? dateKey(calendarDate(calendarYear.valueAsNumber, Number(calendarMonth.value), 1)).slice(0, 7) : "";
+    if (!stays.some((date) => date.slice(0, 7) === visibleMonth)) {
+      calendarYear.value = Number(stays[0].slice(0, 4));
+      calendarMonth.value = Number(stays[0].slice(5, 7)) - 1;
+      selectedDate = null;
+    }
+  }
+  calendarDataset = dataset;
+  renderCalendar();
 }
 
 function renderCalendar() {
@@ -203,11 +238,7 @@ function renderCalendar() {
     calendarMessage.textContent = "Enter a year from 1 to 9999.";
     return;
   }
-  if (!calendarScenario) {
-    calendarMessage.textContent = "Correct the scenario inputs to see the simulated calendar.";
-    return;
-  }
-  calendarMessage.textContent = "";
+  calendarMessage.textContent = calendarScenario ? "" : "Correct the scenario inputs to see simulated occupancy and rates.";
   const year = calendarYear.valueAsNumber;
   const month = Number(calendarMonth.value);
   const firstDay = calendarDate(year, month, 1);
@@ -227,28 +258,28 @@ function renderCalendar() {
   }
   for (let day = 1; day <= daysInMonth; day += 1) {
     const date = calendarDate(year, month, day);
-    const hasOverride = dailyEdits.has(dateKey(date));
-    const weekend = PRICING_RULES.weekend;
-    const factor = weekend.days.includes(date.getUTCDay()) ? weekend.factor : 1;
-    const scenario = scenarioForDate(date);
-    const occupancy = scenario.booked / scenario.total;
-    const hasRate = scenario.base > 0;
-    const rateText = hasRate ? euro.format(calculatePricing(scenario, factor).rate) : "—";
+    const { row, edit, missing, source, occupancy, rate } = calendarDayData(date);
+    const rateText = rate === null ? "—" : euro.format(rate);
+    const occupancyText = occupancy === null ? "Occupancy unavailable" : percent.format(occupancy) + " occ.";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "calendar-day";
+    button.dataset.date = dateKey(date);
+    button.dataset.source = source;
     button.setAttribute("aria-pressed", String(selectedDate !== null && +selectedDate === +date));
     button.setAttribute("aria-label", [
-      dateFormat.format(date), hasRate ? rateText : "Rate pending",
-      percent.format(occupancy) + " simulated occupancy",
-      ...(hasOverride ? ["saved override"] : [])
+      dateFormat.format(date), rate === null ? "Rate pending" : rateText,
+      occupancy === null ? occupancyText : percent.format(occupancy) + (row ? " imported occupancy" : " simulated occupancy"),
+      ...(edit ? ["saved override"] : []), source,
+      ...(missing.length ? ["Missing " + missing.join(", ")] : [])
     ].join(", "));
     for (const [value, className] of [
       [day, "calendar-desktop-date"],
       [shortDateFormat.format(date), "calendar-mobile-date"],
       [rateText, "calendar-rate"],
-      [percent.format(occupancy) + " occ.", "calendar-occupancy"],
-      ...(hasOverride ? [["Override", "calendar-override"]] : [])
+      [occupancyText, "calendar-occupancy"],
+      [source, "calendar-source"],
+      ...(edit ? [["Override", "calendar-override"]] : [])
     ]) {
       const span = document.createElement("span");
       span.className = className;
@@ -260,7 +291,7 @@ function renderCalendar() {
       button.setAttribute("aria-pressed", "true");
       selectedDate = date;
       showDayEditor();
-      dayBooked.focus();
+      (dayBooked.disabled ? dayDemand : dayBooked).focus();
     });
     calendarGrid.append(button);
   }
@@ -268,12 +299,31 @@ function renderCalendar() {
 }
 
 function showDayEditor() {
-  const scenario = scenarioForDate(selectedDate);
+  const { row, edit, missing, source, rate, total, booked, demand } = calendarDayData(selectedDate);
   byId("day-title").textContent = dateFormat.format(selectedDate);
-  byId("day-override").hidden = !dailyEdits.has(dateKey(selectedDate));
-  dayBooked.max = scenario.total;
-  dayBooked.value = scenario.booked;
-  dayDemand.value = scenario.demand;
+  byId("day-source").textContent = source;
+  byId("day-override").hidden = !edit;
+  byId("day-data-status").textContent = missing.length ? `Missing ${missing.join(", ")}.` : "";
+  byId("day-import-metrics").hidden = !row;
+  if (row) {
+    const show = (value, format = String) => value === null ? "N/A" : format(value);
+    byId("day-snapshot").textContent = row.snapshotDate;
+    byId("day-available").textContent = show(row.availableRooms);
+    byId("day-sold").textContent = show(row.roomsSold);
+    byId("day-occupancy").textContent = show(row.occupancy, percent.format);
+    byId("day-value-label").textContent = hotelData.hotelValueLabel(row.date, hotelData.localHotelDate());
+    byId("day-value").textContent = show(row.roomRevenue, euro.format);
+    byId("day-adr").textContent = show(row.adr, euro.format);
+    byId("day-rate").textContent = rate === null ? "Pending" : euro.format(rate);
+  }
+  dayBooked.disabled = Boolean(row) || !calendarScenario;
+  dayBooked.parentElement.hidden = dayBooked.disabled;
+  dayBooked.max = total ?? "";
+  dayBooked.value = booked ?? "";
+  dayDemand.value = demand;
+  byId("day-demand-label").textContent = row ? "Date demand" : "Simulated demand";
+  dayDemand.disabled = !row && !calendarScenario;
+  dayEditor.querySelector('button[type="submit"]').disabled = dayDemand.disabled;
   dayEditor.hidden = false;
 }
 
@@ -286,8 +336,10 @@ calendarMonth.addEventListener("change", changeCalendarMonth);
 calendarYear.addEventListener("input", changeCalendarMonth);
 dayEditor.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (!selectedDate || !calendarScenario || !dayEditor.reportValidity()) return;
-  dailyEdits.set(dateKey(selectedDate), { booked: dayBooked.valueAsNumber, demand: dayDemand.value });
+  if (!selectedDate || dayDemand.disabled || !dayEditor.reportValidity()) return;
+  const key = dateKey(selectedDate);
+  const booked = dayBooked.disabled ? dailyEdits.get(key)?.booked ?? null : dayBooked.valueAsNumber;
+  dailyEdits.set(key, { booked, demand: dayDemand.value });
   try {
     localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(dailyEdits)));
     storageMessage.textContent = "Date saved in this browser.";
@@ -334,7 +386,9 @@ function setupWorkspaceNavigation() {
 
     const isImport = activeView.dataset.view === "data-import";
     const isPerformance = activeView.dataset.view === "hotel-performance";
-    mode.textContent = isImport ? "Hotel CSV and Excel data" : isPerformance ? "Imported hotel data" : "Simulation data";
+    const isCalendar = activeView.dataset.view === "calendar";
+    mode.textContent = isImport ? "Hotel CSV and Excel data" : isPerformance ? "Imported hotel data"
+      : isCalendar ? "Hybrid pricing" : "Simulation data";
     mode.classList.toggle("workspace-mode-import", isImport || isPerformance);
     const heading = byId(activeView.getAttribute("aria-labelledby"));
     document.title = heading.textContent + " | HotelRate AI";

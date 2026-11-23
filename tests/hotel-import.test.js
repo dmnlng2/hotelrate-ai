@@ -53,13 +53,13 @@ test("rejects invalid dates in either date column", () => {
 });
 
 test("rejects invalid capacity, bookings and revenue", () => {
-  for (const capacity of ["0", "-1", "2.5", "", "9007199254740992"]) {
+  for (const capacity of ["0", "-1", "2.5", "9007199254740992"]) {
     assert.throws(() => parseHotelCsv(csv(`2024-02-29,${capacity},1,10,2024-03-01`)), /row 2: available_rooms/);
   }
-  for (const bookings of ["101", "-1", "2.5", "", '"1\n"']) {
+  for (const bookings of ["101", "-1", "2.5", '"1\n"']) {
     assert.throws(() => parseHotelCsv(csv(`2024-02-29,100,${bookings},10,2024-03-01`)), /row 2: rooms_sold/);
   }
-  for (const revenue of ["-1", "", "Infinity", "NaN", '"1,00"', "9".repeat(310)]) {
+  for (const revenue of ["-1", "Infinity", "NaN", '"1,00"', "9".repeat(310)]) {
     assert.throws(() => parseHotelCsv(csv(`2024-02-29,100,1,${revenue},2024-03-01`)), /row 2: room_revenue/);
   }
 });
@@ -96,4 +96,18 @@ test("accepts exactly 1 MiB and rejects larger files before reading", async () =
 test("rejects other file extensions and invalid UTF-8", async () => {
   await assert.rejects(readHotelCsv(file(csv(validRow), "data.xlsx")), /\.csv extension/);
   await assert.rejects(readHotelCsv(file(Uint8Array.of(255))), /valid UTF-8/);
+});
+
+test("keeps blank metrics unknown while retaining known room counts and occupancy", () => {
+  const [missingBookings, missingRevenue] = parseHotelCsv(csv(
+    "2024-02-29,100,,200,2024-03-01\n" +
+    "2024-03-01,100,55,,2024-03-01"
+  ));
+  assert.equal(missingBookings.roomsSold, null);
+  assert.equal(missingBookings.occupancy, null);
+  assert.equal(missingBookings.adr, null);
+  assert.equal(missingRevenue.occupancy, 0.55);
+  assert.equal(missingRevenue.roomRevenue, null);
+  assert.equal(missingRevenue.adr, null);
+  assert.equal(missingRevenue.revpar, null);
 });

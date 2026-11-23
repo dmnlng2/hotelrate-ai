@@ -124,7 +124,7 @@ test("Reset restores and persists scenario defaults while retaining calendar edi
   await expect(page.getByRole("combobox", { name: "Simulated demand", exact: true })).toHaveValue("high");
 });
 
-test("previews and confirms CSV separately from simulation, then clears the import on reload", async ({ page }) => {
+test("uses confirmed CSV for calendar pricing and restores simulation on reload", async ({ page }) => {
   await enterScenario(page);
   await saveFridayEdit(page);
   await openView(page, "Data Import");
@@ -149,7 +149,7 @@ test("previews and confirms CSV separately from simulation, then clears the impo
   await openView(page, "Rate Simulator");
   await expect(page.locator("#rate")).toHaveText("€660.00");
   await openView(page, "Pricing Calendar");
-  await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€948\.75, 90%/);
+  await expect(calendarDay(page, "6 August 2027")).toHaveAccessibleName(/€759\.00, 55% imported occupancy.*IMPORTED DATA/);
 
   await openView(page, "Rate Simulator");
   await page.getByLabel("Base nightly rate (EUR)").fill("600");

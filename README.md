@@ -1,6 +1,6 @@
-# HotelRate AI V3.3
+# HotelRate AI V3.4
 
-HotelRate AI includes an educational dynamic pricing simulator for a fictional 100-room luxury resort in Costa Smeralda, Sardinia, and a separate daily hotel data import.
+HotelRate AI includes an educational dynamic pricing simulator for a fictional 100-room luxury resort in Costa Smeralda, Sardinia, with a hybrid pricing calendar powered by daily hotel data imports.
 
 ## Run locally
 
@@ -8,18 +8,18 @@ HotelRate AI includes an educational dynamic pricing simulator for a fictional 1
 2. Open `index.html` in a modern web browser by double-clicking it.
 3. Open **Rate Simulator** and change the scenario inputs to recalculate automatically, or select **Calculate rate**. **Reset** restores the default scenario.
 
-**Overview** summarizes the current simulated scenario. **Pricing Calendar** shows daily estimates and saved date overrides. Workspace links can be bookmarked and work with browser back and forward.
+**Overview** summarizes the current simulated scenario. **Pricing Calendar** uses confirmed hotel records where available and shows simulated rates on other dates. Workspace links can be bookmarked and work with browser back and forward.
 
 The app works offline and requires no installation, server, framework, external API or backend.
 
 ## Daily hotel data import
 
-Open **Data Import** and select your file or download the [CSV sample](sample-hotel-data.csv) or the [Excel sample](sample-hotel-data.xlsx). The browser shows the filename and format, validates every record and previews up to the first 50 in file order. Select **Confirm Import** to replace the current import with all validated records. Any validation error rejects the whole file, clears the pending preview and leaves the last confirmed import available. The error shows the CSV line or Excel row when applicable.
+Open **Data Import** and select your file or download the [CSV sample](sample-hotel-data.csv) or the [Excel sample](sample-hotel-data.xlsx). The browser shows the filename and format, validates every record and previews up to the first 50 in file order. Select **Confirm Import** to replace the current import with all validated records, including dated records with missing metrics. Any validation error rejects the whole file, clears the pending preview and leaves the last confirmed import available. The error shows the CSV line or Excel row when applicable.
 
 - **CSV** accepts comma-delimited UTF-8 `.csv` up to 1 MiB (1,048,576 bytes), including UTF-8 BOM, LF and CRLF line endings, quoted fields and doubled quotes inside quoted fields. Each record must have the same field count as the header.
 - **Excel** accepts `.xlsx` up to 5 MiB (5,242,880 bytes). Import uses row 1 for headers and reads only the first worksheet. Legacy `.xls` files are unsupported. The importer accepts native Excel dates, date-formatted serial numbers in the 1900 or 1904 system, and strict `YYYY-MM-DD` text. It converts Excel dates to calendar dates without applying the browser time zone. Unformatted numeric dates, ambiguous text and formulas in required fields are rejected.
 
-Use the exact column names below in any order. Additional columns are ignored. Include at least one data record and avoid blank rows between records.
+Use the exact column names below in any order. Additional columns are ignored. Include at least one data record and avoid blank rows between records. Both dates are required on every row. Leave unavailable metrics blank and retain their column headers. Blank metrics appear as **N/A** in the preview and Hotel Performance.
 
 | Required column | Meaning and validation |
 | --- | --- |
@@ -39,7 +39,7 @@ HotelRate AI uses SheetJS Community Edition 0.20.3 for its browser support and a
 
 ### Privacy and retention
 
-The browser reads files locally. The app sends no file or imported data to a server. Preview and confirmed data live only in page memory and are cleared on refresh or close. The import uses neither of the V2 `localStorage` keys and has no effect on simulated prices or calendar edits. The simulator's **Reset** applies to its own scenario.
+The browser reads files locally. The app sends no file or imported data to a server. Preview and confirmed data live only in page memory and are cleared on refresh or close. The import uses neither of the V2 `localStorage` keys. Simulated rates and calendar edits retain their browser settings. The simulator's **Reset** applies to its own scenario.
 
 ### Test the import locally
 
@@ -56,7 +56,7 @@ The Monday-first calendar shows occupancy and ADR on dates with imported records
 
 The monthly cards report how many dates contribute to the summary. They sum available room-nights, sold room-nights and room value for the selected snapshot and visible month. Occupancy divides total sold room-nights by total available room-nights. ADR divides total room value by total sold room-nights and displays **N/A** when none were sold. RevPAR divides total room value by total available room-nights.
 
-Dates after today use **Booked room value**. Dates through today use **Room revenue** as reported by the source. Months containing both use **Room value** with an explanatory note. Refreshing clears the imported records and the performance view. The Rate Simulator, simulated Pricing Calendar and their saved settings use their own data.
+Dates after today use **Booked room value**. Dates through today use **Room revenue** as reported by the source. Months containing both use **Room value** with an explanatory note. Refreshing clears the imported records and the performance view. The Rate Simulator continues to use its own scenario inputs. A monthly total or derived metric displays **N/A** if any record lacks a value needed for that calculation.
 
 ## Automated tests
 
@@ -79,7 +79,7 @@ GitHub Actions runs both suites on every push and pull request and installs Chro
 - Enter room inventory, booked rooms, base rate in EUR, season and demand. Validation checks whole-number room counts, booked rooms within inventory and a non-negative base rate in euros and cents.
 - See occupancy, the suggested nightly rate, the percentage change from the base rate and the three factors used in the calculation.
 - Explore illustrative average daily rate (ADR), revenue per available room (RevPAR) and room revenue.
-- Browse a simulated monthly pricing calendar, starting in August 2027. Choose a month and year to see each day's suggested nightly rate and occupancy.
+- Browse the hybrid monthly Pricing Calendar by month and year. It starts in August 2027 before an import.
 - `index.html` defines the dashboard, `style.css` controls the responsive layout and `pricing.js` contains the pricing rules and calculations, and `script.js` handles validation and display updates.
 
 ## Main scenario defaults and local storage
@@ -88,11 +88,21 @@ The initial scenario has 100 total rooms, 0 booked rooms, a €0.00 base rate, S
 
 The browser automatically saves the last valid main scenario to `localStorage`, including a base rate of zero. The app validates the saved scenario on load and uses the defaults when saved data is missing or invalid. **Reset** restores and saves the defaults while retaining the separately stored calendar edits.
 
-## Simulated monthly calendar
+## Hybrid Pricing Calendar
 
-Each date starts with the current scenario's room inventory, booked rooms, base rate, season and demand. Select a date, edit its booked rooms and demand, then choose **Save date**. Saved values override those two scenario inputs for that date. Inventory, base rate and season still follow the main scenario.
+- **IMPORTED DATA** uses the latest confirmed snapshot available for each stay date, with one record per date. Select the date to see the source snapshot, available rooms, sold rooms, occupancy, room revenue or booked room value, and ADR. Hotel Performance retains its snapshot selector for reviewing any one snapshot in isolation.
+- **INCOMPLETE DATA** identifies an imported date with blank metrics. The date detail lists missing fields and displays the values that were supplied. A recommendation can still use known occupancy when room revenue is missing. If either room count is missing, occupancy and the recommendation stay unavailable. Invalid supplied values and structural errors are reported by Data Import and prevent confirmation.
+- **SIMULATION** identifies a date with no record in the confirmed dataset. The calendar uses the current valid Rate Simulator scenario and any saved simulation edits for that date. Missing records contribute no occupancy to Hotel Performance.
 
-Date edits are stored in this browser using `localStorage` and restored when you reopen the page from the same location, subject to browser storage settings. If storage is unavailable, edits remain available until you reload or close the page. **Reset** restores the main scenario defaults and retains saved date edits. If inventory falls below a date's saved bookings, the simulation caps that date's bookings at the current inventory while retaining the saved count for when capacity increases again.
+For an imported date, the existing engine uses imported occupancy along with the configured base rate, season, demand and weekend multiplier. A saved date demand overrides global demand. The configured base rate must be positive for a recommendation. The detail panel displays the recommended selling rate and the source ADR as separate figures. Global room counts and saved simulated bookings apply only to simulated dates. Rate Simulator remains a what-if tool.
+
+Confirming an import refreshes both views together. The first import opens the earliest imported month if the calendar's visible month has no records. Subsequent imports preserve the visible calendar month. A replacement file can change which dates use simulation. Refreshing clears the import and restores the simulation using saved settings.
+
+### Simulation and date overrides
+
+Each simulated date starts with the current scenario's room inventory, booked rooms, base rate, season and demand. Select a date, edit its booked rooms and demand, then choose **Save date**. Saved values override those two scenario inputs for that date. Inventory, base rate and season still follow the main scenario.
+
+For imported dates, the editor offers a demand override and keeps any saved simulated bookings for use if the date returns to simulation. Date edits are stored in this browser using `localStorage` and restored when you reopen the page from the same location, subject to browser storage settings. If storage is unavailable, edits remain available until you reload or close the page. **Reset** restores the main scenario defaults and retains saved date edits. If inventory falls below a date's saved bookings, the simulation caps that date's bookings at the current inventory while retaining the saved count for when capacity increases again.
 
 The calendar uses the same pricing rules as the single-night simulator and applies a **1.10 multiplier on Friday and Saturday**, before rounding the rate to cents. All other dates use 1.00. The single-night simulator keeps its original formula. With the example scenario below, Friday 6 August 2027 shows €726.00 and Sunday 8 August shows €660.00, both at 72% simulated occupancy.
 

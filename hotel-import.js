@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const { hotelMetrics, localHotelDate, hotelValueLabel } = typeof module === "undefined"
+  const { hotelMetrics, localHotelDate, hotelValueLabel, missingHotelMetrics, createHotelDataset } = typeof module === "undefined"
     ? hotelData
     : require("./hotel-data.js");
   const MAX_FILE_BYTES = 1024 * 1024;
@@ -103,16 +103,19 @@
       if (!validDate(date)) throw fail(line, "date must be a valid calendar date in YYYY-MM-DD format.");
       if (!validDate(snapshotDate)) throw fail(line, "snapshot_date must be a valid calendar date in YYYY-MM-DD format.");
 
-      const availableRooms = Number(capacity);
-      const roomsSold = Number(bookings);
-      const roomRevenue = Number(revenue);
-      if (!/^[0-9]+$/.test(capacity) || /\s/.test(capacity) || !Number.isSafeInteger(availableRooms) || availableRooms <= 0) {
+      const availableRooms = capacity === "" ? null : Number(capacity);
+      const roomsSold = bookings === "" ? null : Number(bookings);
+      const roomRevenue = revenue === "" ? null : Number(revenue);
+      if (availableRooms !== null && (!/^[0-9]+$/.test(capacity) || /\s/.test(capacity) ||
+          !Number.isSafeInteger(availableRooms) || availableRooms <= 0)) {
         throw fail(line, "available_rooms must be a positive whole number within the supported integer range.");
       }
-      if (!/^[0-9]+$/.test(bookings) || /\s/.test(bookings) || !Number.isSafeInteger(roomsSold) || roomsSold > availableRooms) {
+      if (roomsSold !== null && (!/^[0-9]+$/.test(bookings) || /\s/.test(bookings) ||
+          !Number.isSafeInteger(roomsSold) || (availableRooms !== null && roomsSold > availableRooms))) {
         throw fail(line, "rooms_sold must be a whole number from 0 to available_rooms.");
       }
-      if (!/^[0-9]+(?:\.[0-9]+)?$/.test(revenue) || /\s/.test(revenue) || !Number.isFinite(roomRevenue)) {
+      if (roomRevenue !== null && (!/^[0-9]+(?:\.[0-9]+)?$/.test(revenue) || /\s/.test(revenue) ||
+          !Number.isFinite(roomRevenue))) {
         throw fail(line, "room_revenue must be a finite nonnegative EUR amount. Use a decimal point and omit currency signs and thousands separators.");
       }
       // Check the source digits so extremely small positive amounts cannot round to zero.
@@ -167,7 +170,9 @@
       if (format && /[hs]|\[m+\]/i.test(format) && !/[dy]/i.test(format)) return "";
       return cell.v.toISOString().split("T")[0];
     }
-    if (isDate || cell?.t !== "n" || !Number.isFinite(cell.v)) return "";
+    if (isDate) return "";
+    if (!cell || cell.t === "z") return "";
+    if (cell.t !== "n" || !Number.isFinite(cell.v)) return "Invalid numeric cell";
 
     // Expand scientific notation so native numbers use the CSV decimal grammar.
     const [decimal, exponent] = String(cell.v).split("e");
@@ -246,6 +251,7 @@
     const caption = preview.querySelector("caption");
     const euro = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
     const percent = new Intl.NumberFormat("en-IE", { style: "percent", maximumFractionDigits: 2 });
+    const show = (value, formatter = String) => value === null ? "N/A" : formatter(value);
     let selection = 0;
     let pendingRows;
     let importedRows = [];
@@ -257,10 +263,9 @@
       for (const row of visibleRows) {
         const tr = tableBody.insertRow();
         for (const value of [
-          row.date, row.snapshotDate, row.availableRooms, row.roomsSold, euro.format(row.roomRevenue),
+          row.date, row.snapshotDate, show(row.availableRooms), show(row.roomsSold), show(row.roomRevenue, euro.format),
           hotelValueLabel(row.date, today),
-          percent.format(row.occupancy), row.adr === null ? "N/A" : euro.format(row.adr),
-          euro.format(row.revpar)
+          show(row.occupancy, percent.format), show(row.adr, euro.format), show(row.revpar, euro.format)
         ]) {
           tr.insertCell().textContent = value;
         }
@@ -288,7 +293,10 @@
         if (currentSelection !== selection) return;
         pendingRows = rows;
         showRows(rows, format === "CSV" ? "CSV preview" : "Excel preview");
-        status.textContent = `${rows.length} valid records ready to import.`;
+        const incomplete = rows.filter((row) => missingHotelMetrics(row).length).length;
+        status.textContent = incomplete
+          ? `${rows.length} records ready to import, including ${incomplete} with missing metrics.`
+          : `${rows.length} valid records ready to import.`;
         confirm.disabled = false;
       } catch (failure) {
         if (currentSelection !== selection) return;
@@ -306,10 +314,16 @@
       input.value = "";
       showRows(importedRows, "Imported data");
       status.textContent = `${importedRows.length} records imported. Refreshing the page clears this import.`;
-      onConfirm(importedRows);
+      onConfirm(createHotelDataset(importedRows));
     });
   }
 
-  if (typeof document !== "undefined") setupImport(setupHotelPerformance());
+  if (typeof document !== "undefined") {
+    const updatePerformance = setupHotelPerformance();
+    setupImport((dataset) => {
+      updatePerformance(dataset);
+      updateCalendarDataset(dataset);
+    });
+  }
   if (typeof module !== "undefined") module.exports = { MAX_FILE_BYTES, MAX_XLSX_BYTES, parseHotelCsv, readHotelCsv, parseHotelXlsx, readHotelXlsx };
 })();

@@ -273,6 +273,9 @@ dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   font-size: .7rem;
   font-weight: 700;
 }
+.calendar-source, .calendar-day .calendar-source { font-size: .65rem; font-weight: 700; color: var(--muted); }
+.calendar-day[data-source="IMPORTED DATA"] .calendar-source { color: var(--success-text); }
+.calendar-day[data-source="INCOMPLETE DATA"] .calendar-source { color: var(--accent-dark); }
 .calendar-day .calendar-mobile-date { display: none; }
 .calendar-day .calendar-desktop-date { color: var(--accent-dark); }
 #calendar-message { margin-top: 12px; }
